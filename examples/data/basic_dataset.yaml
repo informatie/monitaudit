@@ -1,0 +1,16 @@
+workspaces:
+  - ws_nummer: WS001
+    ws_naam: Requirements
+    elements:
+      - element_code: REQ001
+        element_name: Customer requirement
+      - element_code: REQ002
+        element_name: Technical requirement
+
+  - ws_nummer: WS002
+    ws_naam: Design
+    elements:
+      - element_code: DES001
+        element_name: Solution design
+      - element_code: DES002
+        element_name: Interface design

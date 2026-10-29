@@ -1,11 +1,11 @@
 # monitaudit
-A lightweight, low-overhead Python framework designed for real-time log monitoring, structured system auditing, and event tracking without generic observer patterns.
+A lightweight, low-overhead Python framework designed for real-time log monitoring, structured system auditing, and event tracking without generic monitaudit patterns.
 
 #### monitaudit 🔍 🛡️
 
 A lightweight, high-performance Python framework built specifically to handle concurrent log monitoring, active system observation, and secure audit tracking. 
 
-Unlike generic observer modules that clutter your architecture, monitaudit provides an explicit, developer-friendly interface dedicated entirely to application telemetry, structured debugging logs, and compliance trails. 
+Unlike generic monitaudit modules that clutter your architecture, monitaudit provides an explicit, developer-friendly interface dedicated entirely to application telemetry, structured debugging logs, and compliance trails. 
 
 #### Key Highlights
 

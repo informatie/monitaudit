@@ -1,0 +1,65 @@
+monitaudit:
+  application: monitaudit-example-redaction
+
+  global:
+    is_databricks: false
+
+    logging:
+      level: DEBUG
+      timer: true
+
+      # Required for demonstrating parameter redaction.
+      parameters: true
+
+      max_parameter_length: 1000
+      sink_failure_mode: continue
+
+    sinks:
+      console_sink:
+        enabled: true
+
+      # JSON output makes it easy to verify the captured parameters.
+      json_sink:
+        enabled: true
+        path: logs/examples/redaction.jsonl
+
+      # Human-readable output for manual verification.
+      file_sink:
+        enabled: true
+        path: logs/examples/redaction.log
+
+      # Keep the redaction example independent of Spark.
+      delta_sink:
+        enabled: false
+        table: main.logging.monitaudit_redaction
+
+  dev:
+    is_databricks: false
+
+    logging:
+      level: DEBUG
+      timer: true
+      parameters: true
+      max_parameter_length: 1000
+      sink_failure_mode: continue
+
+    sinks:
+      console_sink:
+        enabled: true
+
+      json_sink:
+        enabled: true
+        path: logs/examples/redaction.jsonl
+
+      file_sink:
+        enabled: true
+        path: logs/examples/redaction.log
+
+      delta_sink:
+        enabled: false
+
+  acc:
+    is_databricks: false
+
+  prod:
+    is_databricks: false

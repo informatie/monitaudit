@@ -1,0 +1,69 @@
+monitaudit:
+  application: relatics-so
+
+  global:
+    logging:
+      level: INFO
+      timer: true
+      parameters: true
+      max_parameter_length: 1000
+      sink_failure_mode: continue
+      
+    sinks:
+      console_sink:
+        enabled: true
+        parameters:
+          - ws_nummer
+          - element_code
+          - element_name 
+
+      json_sink:
+        enabled: true
+        path: volume/metadata/state/logs/json_sink/monitaudit.jsonl
+
+      delta_sink:
+        enabled: true
+
+      file_sink:
+        enabled: true
+        path: volume/metadata/state/logs/file_sink/monitaudit.txt
+
+  dev:
+    is_databricks: false
+
+    sinks:
+      console_sink:
+        enabled: true
+
+      delta_sink:
+        table: dev_relatics.metadata.monitaudit_logs
+  
+  acc:
+    is_databricks: true
+
+    logging:
+      level: INFO
+
+    sinks:
+      console_sink:
+        enabled: false
+
+      delta_sink:
+        table: acc_relatics.metadata.monitaudit_logs
+
+  prod:
+    is_databricks: true
+
+    logging:
+      level: WARNING
+
+    sinks:
+      console_sink:
+        enabled: false
+
+      json_sink:
+        path: /var/log/monitaudit/monitaudit.jsonl
+
+      delta_sink:
+        enabled: true
+        table: prod_relatics.metadata.monitaudit_logs

@@ -1,0 +1,32 @@
+monitaudit:
+  application: monitaudit-example-delta-databricks
+
+  global:
+    is_databricks: true
+    logging:
+      level: DEBUG
+      timer: true
+      parameters: true
+      max_parameter_length: 1000
+      sink_failure_mode: continue
+    sinks:
+      console_sink:
+        enabled: true
+      json_sink:
+        enabled: true
+        path: logs/examples/main_delta_databricks.jsonl
+      file_sink:
+        enabled: true
+        path: logs/examples/main_delta_databricks.log
+      delta_sink:
+        enabled: true
+        table: main.logging.delta_databricks
+
+  dev:
+    is_databricks: true
+
+  acc:
+    is_databricks: true
+
+  prod:
+    is_databricks: true
