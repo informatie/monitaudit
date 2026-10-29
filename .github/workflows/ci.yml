@@ -1,14 +1,19 @@
-name: CI
+name: Publish to PyPI
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    tags:
+      - 'v*' # Triggers whenever you create a release tag like v0.1.0
 
 jobs:
-  test:
+  build-and-publish:
+    name: Build and publish Python distribution
     runs-on: ubuntu-latest
+    permissions:
+      # This permission is required for Trusted Publishing OIDC authentication
+      id-token: write
+      contents: read
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -23,9 +28,8 @@ jobs:
         with:
           python-version: "3.14"
 
-      - name: Sync Dependencies
-        run: uv sync
+      - name: Build Package Distributions
+        run: uv build
 
-      - name: Run Package Tests
-        run: uv run pytest
-
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
