@@ -29,7 +29,7 @@ monitaudit:
   #
   # Examples:
   #   monitaudit-example
-  #   relatics-ingestion
+  #   nednazit-ingestion
   #   silver-to-gold
   #
   application: monitaudit-example

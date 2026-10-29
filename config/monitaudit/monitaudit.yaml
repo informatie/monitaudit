@@ -1,5 +1,5 @@
 monitaudit:
-  application: relatics-so
+  application: nednazit-monitaudit
 
   global:
     logging:
@@ -36,7 +36,7 @@ monitaudit:
         enabled: true
 
       delta_sink:
-        table: dev_relatics.metadata.monitaudit_logs
+        table: dev_nednazit.metadata.monitaudit_logs
   
   acc:
     is_databricks: true
@@ -49,7 +49,7 @@ monitaudit:
         enabled: false
 
       delta_sink:
-        table: acc_relatics.metadata.monitaudit_logs
+        table: acc_nednazit.metadata.monitaudit_logs
 
   prod:
     is_databricks: true
@@ -66,4 +66,4 @@ monitaudit:
 
       delta_sink:
         enabled: true
-        table: prod_relatics.metadata.monitaudit_logs
+        table: prod_nednazit.metadata.monitaudit_logs

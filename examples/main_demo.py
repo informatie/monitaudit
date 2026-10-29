@@ -216,7 +216,7 @@ def run_demo(
         )
 
         row_count = check_database(
-            database="relatics",
+            database="nednazit",
             database_password="database-secret",
             options={
                 "retry": 3,
@@ -363,7 +363,7 @@ def print_summary() -> None:
         "\n"
         "Expected visible parameters:\n"
         "  username     = service_account\n"
-        "  database     = relatics\n"
+        "  database     = nednazit\n"
         "  timeout      = 30\n"
         "  retry        = 3\n"
         "  host         = database01\n"

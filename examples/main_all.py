@@ -131,7 +131,7 @@ def run_demo(obs: Observability) -> None:
         )
 
         row_count = check_database(
-            database="relatics",
+            database="nednazit",
             database_password="database-secret",
             options={
                 "retry": 3,

@@ -6,7 +6,7 @@ from delta import configure_spark_with_delta_pip
 from pyspark.sql import SparkSession
 
 
-DELTA_PATH = Path("dev_relatics/metadata/monitaudit_logs").resolve()
+DELTA_PATH = Path("dev_nednazit/metadata/monitaudit_logs").resolve()
 VIEW_NAME = "monitaudit_logs"
 
 

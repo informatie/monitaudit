@@ -1,6 +1,6 @@
 monitaudit:
   # Application name used in LogContext.
-  application: relatics
+  application: nednazit
 
   # Base configuration inherited by dev, acc and prod.
   global:
@@ -84,7 +84,7 @@ monitaudit:
 
       delta_sink:
         enabled: true
-        table: acc_relatics.metadata.monitaudit_logs
+        table: acc_nednazit.metadata.monitaudit_logs
 
   # Production overrides.
   prod:
@@ -105,4 +105,4 @@ monitaudit:
 
       delta_sink:
         enabled: true
-        table: prod_relatics.metadata.monitaudit_logs
+        table: prod_nednazit.metadata.monitaudit_logs
