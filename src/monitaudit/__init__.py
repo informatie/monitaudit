@@ -1,5 +1,4 @@
 # src/monitaudit/__init__.py
-
 from __future__ import annotations
 
 from .logger import monitauditLogger
@@ -11,6 +10,8 @@ from .sinks import (
     FileSink,
     JsonSink,
 )
+
+__version__ = "0.3.0"
 
 __all__ = [
     "ConsoleSink",

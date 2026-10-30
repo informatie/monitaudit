@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "monitaudit"
-version = "0.1.0"
+dynamic = ["version"]
 description = "A lightweight, low-overhead Python framework for real-time log monitoring and structured system auditing."
 readme = "README.md"
 requires-python = ">=3.14"
@@ -45,3 +45,7 @@ packages = ["src/monitaudit"]
 dev = [
     "pytest>=9.1.1",
 ]
+
+[tool.hatch.version]
+source = "regex"
+path = "src/monitaudit/__init__.py"
