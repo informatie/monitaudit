@@ -28,7 +28,7 @@ Demonstration index
 
 Demonstrates
 ------------
-- build_observability()
+- build_monitaudit()
 - example-specific YAML configuration
 - normal logging
 - structured attributes
@@ -76,9 +76,9 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from monitaudit.models.monitaudit import Observability
-from monitaudit.utilities.build_observability import (
-    build_observability,
+from monitaudit.models.monitaudit import Monitaudit
+from monitaudit.utilities.build_monitaudit import (
+    build_monitaudit,
 )
 
 
@@ -92,13 +92,13 @@ CONFIG_PATH = (
 
 
 def run_demo(
-    obs: Observability,
+    obs: Monitaudit,
 ) -> None:
     """
     Execute the complete monitaudit demonstration.
 
     The nested functions are deliberately defined here so they all use the
-    same Observability instance and logging context.
+    same Monitaudit instance and logging context.
     """
 
     @obs.trace
@@ -216,7 +216,7 @@ def run_demo(
         )
 
         row_count = check_database(
-            database="nednazit",
+            database="oracle",
             database_password="database-secret",
             options={
                 "retry": 3,
@@ -262,7 +262,7 @@ def main() -> None:
     Build monitaudit and run the complete demonstration.
     """
 
-    obs = build_observability(
+    obs = build_monitaudit(
         CONFIG_PATH
     )
 
@@ -363,7 +363,7 @@ def print_summary() -> None:
         "\n"
         "Expected visible parameters:\n"
         "  username     = service_account\n"
-        "  database     = nednazit\n"
+        "  database     = oracle\n"
         "  timeout      = 30\n"
         "  retry        = 3\n"
         "  host         = database01\n"
@@ -375,10 +375,10 @@ def print_summary() -> None:
         "    -> inspect nested indentation above\n"
         "\n"
         "  FileSink\n"
-        "    -> logs/examples/main_demo.log\n"
+        "    -> var/log/examples/main_demo.log\n"
         "\n"
         "  JsonSink\n"
-        "    -> logs/examples/main_demo.jsonl\n"
+        "    -> var/log/examples/main_demo.jsonl\n"
         "    -> inspect context, parameters and attributes\n"
         "\n"
         "  DeltaSink\n"

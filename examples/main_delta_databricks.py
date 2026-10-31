@@ -72,7 +72,7 @@ The table should be addressed as:
 
     main.logging.monitaudit_delta_databricks
 
-The example writes normal logs, trace records and one handled ERROR record.
+The example writes normal var/log, trace records and one handled ERROR record.
 
 It then queries the Delta table using Spark SQL and displays records belonging
 to the current monitaudit correlation_id.
@@ -92,8 +92,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from monitaudit.utilities.build_observability import (
-    build_observability,
+from monitaudit.utilities.build_monitaudit import (
+    build_monitaudit,
 )
 
 
@@ -112,7 +112,7 @@ DELTA_TABLE = (
 
 
 def main() -> None:
-    obs = build_observability(
+    obs = build_monitaudit(
         CONFIG_PATH
     )
 

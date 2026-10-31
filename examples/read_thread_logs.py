@@ -9,9 +9,9 @@ from pyspark.sql import SparkSession
 #
 # Query 01: Show all log records chronologically to inspect parallel execution.
 # Query 02: List distinct worker threads actually used by the executor.
-# Query 03: Group logs by thread and workspace to inspect worker assignment.
+# Query 03: Group var/log by thread and workspace to inspect worker assignment.
 # Query 04: Show detailed thread/workspace records for execution debugging.
-# Query 05: Count logs by thread, workspace, function and trace event.
+# Query 05: Count var/log by thread, workspace, function and trace event.
 # Query 06: Count trace lifecycle events by workspace and traced function.
 # Query 07: Compare starts, ends and errors to validate trace lifecycle health.
 # Query 08: Find invalid element-to-workspace parent_call_id relationships.
@@ -23,7 +23,7 @@ from pyspark.sql import SparkSession
 
 
 LOG_PATH = (
-    "logs/examples/"
+    "var/log/examples/"
     "main_workspace_thread_executor.jsonl"
 )
 
@@ -40,7 +40,7 @@ logs = spark.read.json(
     LOG_PATH
 )
 
-logs.createOrReplaceTempView(
+logscreateOrReplaceTempView(
     "monitaudit_logs"
 )
 

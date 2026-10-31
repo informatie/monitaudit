@@ -1,4 +1,4 @@
-# src/monitaudit/utilities/build_observability.py
+# src/monitaudit/utilities/build_monitaudit.py
 
 from __future__ import annotations
 from monitaudit.utilities.get_spark import (
@@ -7,7 +7,7 @@ from monitaudit.utilities.get_spark import (
 )
 from pathlib import Path
 
-from monitaudit.models.monitaudit import Observability
+from monitaudit.models.monitaudit import Monitaudit
 from monitaudit.sinks import (
     ConsoleSink,
     DeltaSink,
@@ -20,9 +20,9 @@ from monitaudit.utilities.get_environment import get_environment
 from monitaudit.utilities.load_config import load_config
 
 
-def build_observability(
+def build_monitaudit(
     config_path: str | Path | None = None,
-) -> Observability:
+) -> Monitaudit:
     if config_path is None:
         config = load_config()
     else:
@@ -42,6 +42,8 @@ def build_observability(
         sinks.append(
             FileSink(
                 path=settings.sinks.file_sink.path,
+                format=settings.sinks.file_sink.format,
+                delimiter=settings.sinks.file_sink.delimiter,                
             )
         )
 
@@ -83,7 +85,7 @@ def build_observability(
             )
         )
 
-    return Observability(
+    return Monitaudit(
         monitaudit.application,
         environment,
         *sinks,

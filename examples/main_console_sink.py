@@ -22,7 +22,7 @@ This makes it possible to visually inspect how ConsoleSink represents:
 
 - root traces
 - nested traces
-- logs inside traced functions
+- var/log inside traced functions
 - function_start
 - function_end
 - call depth
@@ -83,7 +83,7 @@ parent_call_id relationships.
 The start and end records for one traced function should appear at the same
 indentation depth.
 
-Ordinary logs generated inside the traced function are displayed one level
+Ordinary var/log generated inside the traced function are displayed one level
 deeper.
 
 This example is intentionally successful. No function_error events should
@@ -94,8 +94,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from monitaudit.utilities.build_observability import (
-    build_observability,
+from monitaudit.utilities.build_monitaudit import (
+    build_monitaudit,
 )
 
 
@@ -109,7 +109,7 @@ CONFIG_PATH = (
 
 
 def main() -> None:
-    obs = build_observability(
+    obs = build_monitaudit(
         CONFIG_PATH
     )
 
@@ -206,7 +206,7 @@ def print_summary() -> None:
         "  [x] function_start\n"
         "  [x] function_end\n"
         "  [x] trace indentation\n"
-        "  [x] ordinary logs inside traces\n"
+        "  [x] ordinary var/log inside traces\n"
         "  [x] automatic parameter capture\n"
         "  [x] default parameter capture\n"
         "  [x] call_id\n"
@@ -290,7 +290,7 @@ def print_summary() -> None:
         "  START and END for the same function should have the\n"
         "  same indentation.\n"
         "\n"
-        "  Normal logs inside that function should appear one\n"
+        "  Normal var/log inside that function should appear one\n"
         "  indentation level deeper.\n"
         "\n"
         "Configuration:\n"

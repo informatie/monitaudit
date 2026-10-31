@@ -14,10 +14,10 @@ monitaudit:
         enabled: true
       json_sink:
         enabled: true
-        path: logs/examples/main_file_sink.jsonl
+        path: var/log/examples/main_file_sink.jsonl
       file_sink:
         enabled: true
-        path: logs/examples/main_file_sink.log
+        path: var/log/examples/main_file_sink.log
       delta_sink:
         enabled: false
         table: main.logging.file_sink

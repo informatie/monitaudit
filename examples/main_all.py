@@ -11,7 +11,7 @@ capture, sensitive-data redaction, return values and handled failures.
 
 Demonstrates
 ------------
-- build_observability()
+- build_monitaudit()
 - normal logging
 - structured attributes
 - @obs.trace
@@ -57,11 +57,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from monitaudit.models.monitaudit import Observability
-from monitaudit.utilities.build_observability import build_observability
+from monitaudit.models.monitaudit import Monitaudit
+from monitaudit.utilities.build_monitaudit import build_monitaudit
 
 
-def run_demo(obs: Observability) -> None:
+def run_demo(obs: Monitaudit) -> None:
     @obs.trace
     def authenticate(
         username: str,
@@ -131,7 +131,7 @@ def run_demo(obs: Observability) -> None:
         )
 
         row_count = check_database(
-            database="nednazit",
+            database="oracle",
             database_password="database-secret",
             options={
                 "retry": 3,
@@ -164,7 +164,7 @@ def run_demo(obs: Observability) -> None:
 
 
 def main() -> None:
-    obs = build_observability()
+    obs = build_monitaudit()
 
     obs.info(
         "monitaudit demonstration started",

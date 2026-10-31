@@ -32,7 +32,7 @@ The example produces:
 
 Demonstrates
 ------------
-- build_observability()
+- build_monitaudit()
 - multiple sinks active simultaneously
 - ConsoleSink
 - FileSink
@@ -105,8 +105,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from monitaudit.utilities.build_observability import (
-    build_observability,
+from monitaudit.utilities.build_monitaudit import (
+    build_monitaudit,
 )
 
 
@@ -128,11 +128,11 @@ DELTA_PATH = Path(
 )
 
 JSON_PATH = Path(
-    "logs/examples/main_all_sinks.jsonl"
+    "var/log/examples/main_all_sinks.jsonl"
 )
 
 FILE_PATH = Path(
-    "logs/examples/main_all_sinks.log"
+    "var/log/examples/main_all_sinks.log"
 )
 
 
@@ -164,7 +164,7 @@ def main() -> None:
     json_before = count_json_records()
     file_before = count_file_lines()
 
-    obs = build_observability(
+    obs = build_monitaudit(
         CONFIG_PATH
     )
 
@@ -403,10 +403,10 @@ def print_summary() -> None:
         "    -> output displayed during execution\n"
         "\n"
         "  FileSink\n"
-        "    -> logs/examples/main_all_sinks.log\n"
+        "    -> var/log/examples/main_all_sinks.log\n"
         "\n"
         "  JsonSink\n"
-        "    -> logs/examples/main_all_sinks.jsonl\n"
+        "    -> var/log/examples/main_all_sinks.jsonl\n"
         "\n"
         "  DeltaSink\n"
         "    -> main/logging/monitaudit_all_sinks\n"
@@ -429,8 +429,8 @@ def print_summary() -> None:
         "\n"
         "For a clean local test remove previous output first:\n"
         "\n"
-        "  rm -f logs/examples/main_all_sinks.log\n"
-        "  rm -f logs/examples/main_all_sinks.jsonl\n"
+        "  rm -f var/log/examples/main_all_sinks.log\n"
+        "  rm -f var/log/examples/main_all_sinks.jsonl\n"
         "  rm -rf main/logging/monitaudit_all_sinks\n"
         "\n"
         "Configuration:\n"

@@ -28,11 +28,11 @@ monitaudit:
 
       json_sink:
         enabled: true
-        path: logs/examples/main_basic.jsonl
+        path: var/log/examples/main_basic.jsonl
 
       file_sink:
         enabled: true
-        path: logs/examples/main_basic.log
+        path: var/log/examples/main_basic.log
 
       # Keep the basic example independent of Spark.
       delta_sink:
@@ -58,11 +58,11 @@ monitaudit:
 
       json_sink:
         enabled: true
-        path: logs/examples/main_basic.jsonl
+        path: var/log/examples/main_basic.jsonl
 
       file_sink:
         enabled: true
-        path: logs/examples/main_basic.log
+        path: var/log/examples/main_basic.log
 
       delta_sink:
         enabled: false

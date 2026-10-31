@@ -89,9 +89,9 @@ working sinks should already have received the record.
 
 Check:
 
-    logs/examples/main_sink_failure_raise.log
+    var/log/examples/main_sink_failure_raise.log
 
-    logs/examples/main_sink_failure_raise.jsonl
+    var/log/examples/main_sink_failure_raise.jsonl
 
 Do not use this example when
 ----------------------------
@@ -109,8 +109,8 @@ from pathlib import Path
 
 from monitaudit.models.base import BaseLog
 from monitaudit.sinks.base import Sink
-from monitaudit.utilities.build_observability import (
-    build_observability,
+from monitaudit.utilities.build_monitaudit import (
+    build_monitaudit,
 )
 
 
@@ -146,7 +146,7 @@ class BrokenSink(Sink):
 
 
 def main() -> None:
-    obs = build_observability(
+    obs = build_monitaudit(
         CONFIG_PATH
     )
 
@@ -322,10 +322,10 @@ def print_summary() -> None:
         "    -> the log record should appear before the final exception\n"
         "\n"
         "  FileSink\n"
-        "    -> logs/examples/main_sink_failure_raise.log\n"
+        "    -> var/log/examples/main_sink_failure_raise.log\n"
         "\n"
         "  JsonSink\n"
-        "    -> logs/examples/main_sink_failure_raise.jsonl\n"
+        "    -> var/log/examples/main_sink_failure_raise.jsonl\n"
         "\n"
         "Important verification:\n"
         "\n"

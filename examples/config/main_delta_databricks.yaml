@@ -14,10 +14,10 @@ monitaudit:
         enabled: true
       json_sink:
         enabled: true
-        path: logs/examples/main_delta_databricks.jsonl
+        path: var/log/examples/main_delta_databricks.jsonl
       file_sink:
         enabled: true
-        path: logs/examples/main_delta_databricks.log
+        path: var/log/examples/main_delta_databricks.log
       delta_sink:
         enabled: true
         table: main.logging.delta_databricks

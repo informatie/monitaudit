@@ -52,8 +52,8 @@ from typing import Any
 
 import yaml
 
-from monitaudit.utilities.build_observability import (
-    build_observability,
+from monitaudit.utilities.build_monitaudit import (
+    build_monitaudit,
 )
 
 
@@ -103,7 +103,7 @@ def load_dataset() -> dict[str, Any]:
 
 
 def main() -> None:
-    obs = build_observability(
+    obs = build_monitaudit(
         CONFIG_PATH
     )
 
@@ -243,7 +243,7 @@ def print_summary() -> None:
         "\n"
         "Where to look for the results:\n"
         "  - Console: inspect indentation and trace hierarchy\n"
-        "  - JSON: logs/examples/main_nested_error_handled.jsonl\n"
+        "  - JSON: var/log/examples/main_nested_error_handled.jsonl\n"
         "\n"
         "In JSON inspect:\n"
         "  - function\n"

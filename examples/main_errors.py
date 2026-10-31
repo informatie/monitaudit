@@ -51,7 +51,7 @@ from typing import Any
 
 import yaml
 
-from monitaudit.utilities.build_observability import build_observability
+from monitaudit.utilities.build_monitaudit import build_monitaudit
 
 
 DATASET_PATH = Path(__file__).parent / "data" / "example_dataset.yaml"
@@ -78,7 +78,7 @@ def load_dataset() -> dict[str, Any]:
 
 
 def main() -> None:
-    obs = build_observability()
+    obs = build_monitaudit()
 
     @obs.trace
     def process_element(

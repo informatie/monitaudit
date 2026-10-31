@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from .logger import monitauditLogger
 from .models.context import LogContext
-from .models.monitaudit import Observability
+from .models.monitaudit import Monitaudit
 from .sinks import (
     ConsoleSink,
     DeltaSink,
@@ -11,7 +11,7 @@ from .sinks import (
     JsonSink,
 )
 
-__version__ = "0.3.0"
+__version__ = "0.1.0"
 
 __all__ = [
     "ConsoleSink",
@@ -19,6 +19,6 @@ __all__ = [
     "FileSink",
     "JsonSink",
     "LogContext",
-    "Observability",
+    "Monitaudit",
     "monitauditLogger",
 ]

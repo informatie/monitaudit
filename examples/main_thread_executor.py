@@ -26,7 +26,7 @@ Each element-processing log explicitly contains:
 - element code
 - element name
 
-This makes it possible to inspect the monitaudit logs and see which worker
+This makes it possible to inspect the monitaudit var/log and see which worker
 processed each element.
 
 Demonstrates
@@ -66,8 +66,8 @@ from typing import Any
 
 import yaml
 
-from monitaudit.utilities.build_observability import (
-    build_observability,
+from monitaudit.utilities.build_monitaudit import (
+    build_monitaudit,
 )
 
 
@@ -118,7 +118,7 @@ def load_dataset() -> dict[str, Any]:
 
 
 def main() -> None:
-    obs = build_observability(
+    obs = build_monitaudit(
         CONFIG_PATH
     )
 

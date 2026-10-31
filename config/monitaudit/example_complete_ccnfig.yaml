@@ -29,7 +29,7 @@ monitaudit:
   #
   # Examples:
   #   monitaudit-example
-  #   nednazit-ingestion
+  #   myappl-ingestion
   #   silver-to-gold
   #
   application: monitaudit-example
@@ -199,7 +199,9 @@ monitaudit:
           #
           enabled: false
 
+          format : text or csv
 
+          delimiter : any valid character only length of 1
           # ----------------------------------------------------
           # FileSink output path
           # ----------------------------------------------------
@@ -213,7 +215,7 @@ monitaudit:
           # Parent directories are created automatically by the
           # current FileSink implementation.
           #
-          path: logs/monitaudit.log
+          path: var/log/monitaudit.log
 
 
         # ======================================================
@@ -250,7 +252,7 @@ monitaudit:
           # Each log is written using model_dump_json() followed
           # by a newline.
           #
-          path: logs/monitaudit.jsonl
+          path: var/log/monitaudit.jsonl
 
 
         # ======================================================
@@ -379,7 +381,7 @@ monitaudit:
           # Values:
           #   Writable path.
           #
-          path: logs/test-monitaudit.log
+          path: var/log/test-monitaudit.log
 
         json_sink:
 
@@ -397,7 +399,7 @@ monitaudit:
           # Values:
           #   Writable path.
           #
-          path: logs/test-monitaudit.jsonl
+          path: var/log/test-monitaudit.jsonl
 
         delta_sink:
 
@@ -506,7 +508,7 @@ monitaudit:
           # Values:
           #   Writable file path.
           #
-          path: logs/monitaudit.log
+          path: var/log/monitaudit.log
 
         json_sink:
 
@@ -524,7 +526,7 @@ monitaudit:
           # Values:
           #   Writable file path.
           #
-          path: logs/monitaudit.jsonl
+          path: var/log/monitaudit.jsonl
 
         delta_sink:
 

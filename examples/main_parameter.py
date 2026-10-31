@@ -36,7 +36,7 @@ from typing import Any
 
 import yaml
 
-from monitaudit.utilities.build_observability import build_observability
+from monitaudit.utilities.build_monitaudit import build_monitaudit
 
 
 EXAMPLE_DIR = Path(__file__).parent
@@ -82,7 +82,7 @@ def load_dataset() -> dict[str, Any]:
     return data
 
 
-obs = build_observability()
+obs = build_monitaudit()
 
 
 @obs.trace

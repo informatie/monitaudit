@@ -87,8 +87,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from monitaudit.utilities.build_observability import (
-    build_observability,
+from monitaudit.utilities.build_monitaudit import (
+    build_monitaudit,
 )
 
 
@@ -102,7 +102,7 @@ CONFIG_PATH = (
 
 
 def main() -> None:
-    obs = build_observability(
+    obs = build_monitaudit(
         CONFIG_PATH
     )
 
@@ -212,10 +212,10 @@ def print_summary() -> None:
         "    -> inspect trace hierarchy\n"
         "\n"
         "  FileSink\n"
-        "    -> logs/examples/main_redaction_suffixes.log\n"
+        "    -> var/log/examples/main_redaction_suffixes.log\n"
         "\n"
         "  JsonSink\n"
-        "    -> logs/examples/main_redaction_suffixes.jsonl\n"
+        "    -> var/log/examples/main_redaction_suffixes.jsonl\n"
         "\n"
         "In JSON find the demo trace and inspect:\n"
         "  - function\n"

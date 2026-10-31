@@ -14,10 +14,10 @@ monitaudit:
         enabled: true
       json_sink:
         enabled: true
-        path: logs/examples/main_sink_failure_continue.jsonl
+        path: var/log/examples/main_sink_failure_continue.jsonl
       file_sink:
         enabled: true
-        path: logs/examples/main_sink_failure_continue.log
+        path: var/log/examples/main_sink_failure_continue.log
       delta_sink:
         enabled: false
         table: main.logging.sink_failure_continue

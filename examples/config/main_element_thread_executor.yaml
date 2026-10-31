@@ -14,10 +14,10 @@ monitaudit:
         enabled: true
       json_sink:
         enabled: true
-        path: logs/examples/main_element_thread_executor.jsonl
+        path: var/log/examples/main_element_thread_executor.jsonl
       file_sink:
         enabled: true
-        path: logs/examples/main_element_thread_executor.log
+        path: var/log/examples/main_element_thread_executor.log
       delta_sink:
         enabled: false
         table: main.logging.element_thread_executor

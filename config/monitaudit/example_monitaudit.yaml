@@ -1,6 +1,6 @@
 monitaudit:
   # Application name used in LogContext.
-  application: nednazit
+  application: myappl
 
   # Base configuration inherited by dev, acc and prod.
   global:
@@ -33,7 +33,7 @@ monitaudit:
 
       json_sink:
         enabled: false
-        path: logs/monitaudit.jsonl
+        path: var/log/monitaudit.jsonl
 
       delta_sink:
         enabled: false
@@ -41,7 +41,7 @@ monitaudit:
 
       file_sink:
         enabled: false
-        path: volume/metadata/state/logs/monitaudit.log
+        path: var/log/monitaudit.log
 
   # Development overrides.
   dev:
@@ -56,11 +56,11 @@ monitaudit:
 
       json_sink:
         enabled: true
-        path: logs/monitaudit-dev.jsonl
+        path: var/log
 
       file_sink:
         enabled: true
-        path: volume/metadata/state/logs/monitaudit-dev.log
+        path: var/log
 
       delta_sink:
         enabled: false
@@ -84,7 +84,7 @@ monitaudit:
 
       delta_sink:
         enabled: true
-        table: acc_nednazit.metadata.monitaudit_logs
+        table: acc.monitaudit.monitaudit_logs
 
   # Production overrides.
   prod:
@@ -105,4 +105,5 @@ monitaudit:
 
       delta_sink:
         enabled: true
-        table: prod_nednazit.metadata.monitaudit_logs
+        table: prod.monitaudit.monitaudit_logs
+  

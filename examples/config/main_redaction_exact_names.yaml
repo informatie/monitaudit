@@ -14,10 +14,10 @@ monitaudit:
         enabled: true
       json_sink:
         enabled: true
-        path: logs/examples/main_redaction_exact_names.jsonl
+        path: var/log/examples/main_redaction_exact_names.jsonl
       file_sink:
         enabled: true
-        path: logs/examples/main_redaction_exact_names.log
+        path: var/log/examples/main_redaction_exact_names.log
       delta_sink:
         enabled: false
         table: main.logging.redaction_exact_names

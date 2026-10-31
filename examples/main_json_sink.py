@@ -11,7 +11,7 @@ The monitaudit configuration is loaded from:
 
 The configured JsonSink writes to:
 
-    logs/examples/main_json_sink.jsonl
+    var/log/examples/main_json_sink.jsonl
 
 JSON Lines format
 -----------------
@@ -64,7 +64,7 @@ Expected result
 ---------------
 The output file should contain multiple lines:
 
-    logs/examples/main_json_sink.jsonl
+    var/log/examples/main_json_sink.jsonl
 
 Every non-empty line should be independently valid JSON.
 
@@ -78,15 +78,15 @@ JsonSink uses append mode.
 If you want to inspect only records from the current execution, delete the
 existing JSONL file before running this example:
 
-    rm -f logs/examples/main_json_sink.jsonl
+    rm -f var/log/examples/main_json_sink.jsonl
 """
 
 from __future__ import annotations
 
 from pathlib import Path
 
-from monitaudit.utilities.build_observability import (
-    build_observability,
+from monitaudit.utilities.build_monitaudit import (
+    build_monitaudit,
 )
 
 
@@ -99,7 +99,7 @@ CONFIG_PATH = (
 )
 
 JSON_PATH = Path(
-    "logs/examples/main_json_sink.jsonl"
+    "var/log/examples/main_json_sink.jsonl"
 )
 
 
@@ -123,7 +123,7 @@ def count_json_lines() -> int:
 def main() -> None:
     records_before = count_json_lines()
 
-    obs = build_observability(
+    obs = build_monitaudit(
         CONFIG_PATH
     )
 
@@ -249,7 +249,7 @@ def print_summary() -> None:
         "\n"
         "Output file:\n"
         "\n"
-        "  logs/examples/main_json_sink.jsonl\n"
+        "  var/log/examples/main_json_sink.jsonl\n"
         "\n"
         "Important JSONL property:\n"
         "\n"
@@ -284,17 +284,17 @@ def print_summary() -> None:
         "\n"
         "For a clean run first execute:\n"
         "\n"
-        "  rm -f logs/examples/main_json_sink.jsonl\n"
+        "  rm -f var/log/examples/main_json_sink.jsonl\n"
         "\n"
         "Useful shell verification:\n"
         "\n"
-        "  wc -l logs/examples/main_json_sink.jsonl\n"
+        "  wc -l var/log/examples/main_json_sink.jsonl\n"
         "\n"
-        "  tail -n 5 logs/examples/main_json_sink.jsonl\n"
+        "  tail -n 5 var/log/examples/main_json_sink.jsonl\n"
         "\n"
         "With jq installed:\n"
         "\n"
-        "  jq -c . logs/examples/main_json_sink.jsonl\n"
+        "  jq -c . var/log/examples/main_json_sink.jsonl\n"
         "\n"
         "For trace records only:\n"
         "\n"
@@ -308,7 +308,7 @@ def print_summary() -> None:
         "        parameters,\n"
         "        duration_ms\n"
         "      }\n"
-        "  ' logs/examples/main_json_sink.jsonl\n"
+        "  ' var/log/examples/main_json_sink.jsonl\n"
         "\n"
         "Configuration:\n"
         "  examples/config/main_json_sink.yaml\n"

@@ -11,7 +11,7 @@ The monitaudit configuration is loaded from:
 
 The configured FileSink writes to:
 
-    logs/examples/main_file_sink.log
+    var/log/examples/main_file_sink.log
 
 The example produces several different log records:
 
@@ -55,7 +55,7 @@ Expected result
 ---------------
 The log file should exist at:
 
-    logs/examples/main_file_sink.log
+    var/log/examples/main_file_sink.log
 
 Running this script multiple times should append new records rather than
 overwrite the existing file.
@@ -72,15 +72,15 @@ FileSink opens its target using append mode.
 
 For a clean demonstration, remove the previous output first:
 
-    rm -f logs/examples/main_file_sink.log
+    rm -f var/log/examples/main_file_sink.log
 """
 
 from __future__ import annotations
 
 from pathlib import Path
 
-from monitaudit.utilities.build_observability import (
-    build_observability,
+from monitaudit.utilities.build_monitaudit import (
+    build_monitaudit,
 )
 
 
@@ -93,7 +93,7 @@ CONFIG_PATH = (
 )
 
 LOG_PATH = Path(
-    "logs/examples/main_file_sink.log"
+    "var/log/examples/main_file_sink.log"
 )
 
 
@@ -118,7 +118,7 @@ def count_log_lines() -> int:
 def main() -> None:
     lines_before = count_log_lines()
 
-    obs = build_observability(
+    obs = build_monitaudit(
         CONFIG_PATH
     )
 
@@ -235,7 +235,7 @@ def print_summary() -> None:
         "\n"
         "Output file:\n"
         "\n"
-        "  logs/examples/main_file_sink.log\n"
+        "  var/log/examples/main_file_sink.log\n"
         "\n"
         "Expected normal log structure:\n"
         "\n"
@@ -280,19 +280,19 @@ def print_summary() -> None:
         "\n"
         "For a clean run:\n"
         "\n"
-        "  rm -f logs/examples/main_file_sink.log\n"
+        "  rm -f var/log/examples/main_file_sink.log\n"
         "\n"
         "Useful shell commands:\n"
         "\n"
-        "  cat logs/examples/main_file_sink.log\n"
+        "  cat var/log/examples/main_file_sink.log\n"
         "\n"
-        "  tail -n 20 logs/examples/main_file_sink.log\n"
+        "  tail -n 20 var/log/examples/main_file_sink.log\n"
         "\n"
-        "  grep 'ERROR' logs/examples/main_file_sink.log\n"
+        "  grep 'ERROR' var/log/examples/main_file_sink.log\n"
         "\n"
-        "  grep 'error_type=' logs/examples/main_file_sink.log\n"
+        "  grep 'error_type=' var/log/examples/main_file_sink.log\n"
         "\n"
-        "  grep 'traceback:' logs/examples/main_file_sink.log\n"
+        "  grep 'traceback:' var/log/examples/main_file_sink.log\n"
         "\n"
         "Important comparison with JsonSink:\n"
         "\n"

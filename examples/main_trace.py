@@ -33,7 +33,7 @@ Demonstrates
 - parent_call_id
 - nested traces
 - duration_ms
-- normal logs inside traced functions
+- normal var/log inside traced functions
 - ConsoleSink indentation
 
 Use this example when
@@ -62,9 +62,9 @@ from typing import Any
 
 import yaml
 
-from monitaudit.models.monitaudit import Observability
-from monitaudit.utilities.build_observability import (
-    build_observability,
+from monitaudit.models.monitaudit import Monitaudit
+from monitaudit.utilities.build_monitaudit import (
+    build_monitaudit,
 )
 
 
@@ -112,7 +112,7 @@ def load_dataset() -> dict[str, Any]:
 
 
 def run_trace_example(
-    obs: Observability,
+    obs: Monitaudit,
     dataset: dict[str, Any],
 ) -> None:
     @obs.trace
@@ -185,7 +185,7 @@ def run_trace_example(
 
 
 def main() -> None:
-    obs = build_observability(
+    obs = build_monitaudit(
         CONFIG_PATH
     )
 
@@ -230,7 +230,7 @@ def print_summary() -> None:
         "  - automatic parameter capture\n"
         "  - default parameter capture\n"
         "  - execution duration\n"
-        "  - normal logs inside a traced function\n"
+        "  - normal var/log inside a traced function\n"
         "\n"
         "Expected trace hierarchy:\n"
         "\n"
@@ -256,8 +256,8 @@ def print_summary() -> None:
         "\n"
         "Where to look for the results:\n"
         "  - Console: inspect nested indentation above\n"
-        "  - JSON: logs/examples/main_trace.jsonl\n"
-        "  - File: logs/examples/main_trace.log\n"
+        "  - JSON: var/log/examples/main_trace.jsonl\n"
+        "  - File: var/log/examples/main_trace.log\n"
         "\n"
         "For each element trace inspect:\n"
         "  - call_id\n"

@@ -21,12 +21,12 @@ monitaudit:
       # JSON output makes it easy to verify the captured parameters.
       json_sink:
         enabled: true
-        path: logs/examples/redaction.jsonl
+        path: var/log/examples/redaction.jsonl
 
       # Human-readable output for manual verification.
       file_sink:
         enabled: true
-        path: logs/examples/redaction.log
+        path: var/log/examples/redaction.log
 
       # Keep the redaction example independent of Spark.
       delta_sink:
@@ -49,11 +49,11 @@ monitaudit:
 
       json_sink:
         enabled: true
-        path: logs/examples/redaction.jsonl
+        path: var/log/examples/redaction.jsonl
 
       file_sink:
         enabled: true
-        path: logs/examples/redaction.log
+        path: var/log/examples/redaction.log
 
       delta_sink:
         enabled: false

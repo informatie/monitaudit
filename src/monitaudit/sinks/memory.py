@@ -10,7 +10,7 @@ from monitaudit.sinks.base import Sink
 
 class MemorySink(Sink):
     """
-    Sink that stores monitaudit log records in memory.
+    Sink that stores Monitaudit log records in memory.
 
     Primarily intended for tests and temporary in-memory inspection.
     Log records are retained in insertion order until clear() is called

@@ -129,8 +129,8 @@ from concurrent.futures import (
 from pathlib import Path
 from typing import Any
 
-from monitaudit.utilities.build_observability import (
-    build_observability,
+from monitaudit.utilities.build_monitaudit import (
+    build_monitaudit,
 )
 
 
@@ -147,7 +147,7 @@ TASK_COUNT = 3
 
 
 def main() -> None:
-    obs = build_observability(
+    obs = build_monitaudit(
         CONFIG_PATH
     )
 
@@ -173,7 +173,7 @@ def main() -> None:
         )
 
         # Keep the worker busy briefly so concurrent execution is easier
-        # to observe in ConsoleSink and persisted logs.
+        # to observe in ConsoleSink and persisted logs
         time.sleep(0.40)
 
         obs.info(
@@ -385,10 +385,10 @@ def print_summary() -> None:
         "    -> inspect concurrent/interleaved trace output\n"
         "\n"
         "  FileSink\n"
-        "    -> logs/examples/main_thread_trace_isolation.log\n"
+        "    -> var/log/examples/main_thread_trace_isolation.log\n"
         "\n"
         "  JsonSink\n"
-        "    -> logs/examples/main_thread_trace_isolation.jsonl\n"
+        "    -> var/log/examples/main_thread_trace_isolation.jsonl\n"
         "\n"
         "In JSON inspect:\n"
         "  - function\n"

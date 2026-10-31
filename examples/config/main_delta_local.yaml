@@ -14,10 +14,10 @@ monitaudit:
         enabled: true
       json_sink:
         enabled: true
-        path: logs/examples/main_delta_local.jsonl
+        path: var/log/examples/main_delta_local.jsonl
       file_sink:
         enabled: true
-        path: logs/examples/main_delta_local.log
+        path: var/log/examples/main_delta_local.log
       delta_sink:
         enabled: true
         table: main.logging.delta_local

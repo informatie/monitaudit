@@ -112,8 +112,8 @@ from concurrent.futures import (
 from pathlib import Path
 from typing import Any
 
-from monitaudit.utilities.build_observability import (
-    build_observability,
+from monitaudit.utilities.build_monitaudit import (
+    build_monitaudit,
 )
 
 
@@ -130,7 +130,7 @@ TASKS = 9
 
 
 def main() -> None:
-    obs = build_observability(
+    obs = build_monitaudit(
         CONFIG_PATH
     )
 
@@ -153,7 +153,7 @@ def main() -> None:
         )
 
         # Simulate element processing so concurrency and worker reuse
-        # become visible in the logs.
+        # become visible in the logs
         time.sleep(0.10)
 
         obs.info(
@@ -350,10 +350,10 @@ def print_summary() -> None:
         "    -> inspect interleaved element processing\n"
         "\n"
         "  FileSink\n"
-        "    -> logs/examples/main_element_thread_executor.log\n"
+        "    -> var/log/examples/main_element_thread_executor.log\n"
         "\n"
         "  JsonSink\n"
-        "    -> logs/examples/main_element_thread_executor.jsonl\n"
+        "    -> var/log/examples/main_element_thread_executor.jsonl\n"
         "\n"
         "In JSON inspect:\n"
         "  - function\n"

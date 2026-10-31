@@ -89,8 +89,8 @@ from typing import Any
 
 import yaml
 
-from monitaudit.utilities.build_observability import (
-    build_observability,
+from monitaudit.utilities.build_monitaudit import (
+    build_monitaudit,
 )
 
 
@@ -185,7 +185,7 @@ def process_workspace(
 
 
 def main() -> None:
-    obs = build_observability(
+    obs = build_monitaudit(
         CONFIG_PATH
     )
 
@@ -274,8 +274,8 @@ def print_summary() -> None:
         "\n"
         "Where to inspect the results:\n"
         "  - Console: CRITICAL output\n"
-        "  - File: logs/examples/main_stacktrace.log\n"
-        "  - JSON: logs/examples/main_stacktrace.jsonl\n"
+        "  - File: var/log/examples/main_stacktrace.log\n"
+        "  - JSON: var/log/examples/main_stacktrace.jsonl\n"
         "\n"
         "Inspect the CRITICAL record for:\n"
         "  - level\n"

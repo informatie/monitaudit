@@ -14,10 +14,10 @@ monitaudit:
         enabled: true
       json_sink:
         enabled: true
-        path: logs/examples/main_thread_trace_isolation.jsonl
+        path: var/log/examples/main_thread_trace_isolation.jsonl
       file_sink:
         enabled: true
-        path: logs/examples/main_thread_trace_isolation.log
+        path: var/log/examples/main_thread_trace_isolation.log
       delta_sink:
         enabled: false
         table: main.logging.thread_trace_isolation

@@ -90,8 +90,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from monitaudit.utilities.build_observability import (
-    build_observability,
+from monitaudit.utilities.build_monitaudit import (
+    build_monitaudit,
 )
 
 
@@ -117,7 +117,7 @@ LONG_VALUE = (
 
 
 def main() -> None:
-    obs = build_observability(
+    obs = build_monitaudit(
         CONFIG_PATH
     )
 
@@ -272,10 +272,10 @@ def print_summary() -> None:
         "    -> inspect trace execution\n"
         "\n"
         "  FileSink\n"
-        "    -> logs/examples/main_parameter_limit.log\n"
+        "    -> var/log/examples/main_parameter_limit.log\n"
         "\n"
         "  JsonSink\n"
-        "    -> logs/examples/main_parameter_limit.jsonl\n"
+        "    -> var/log/examples/main_parameter_limit.jsonl\n"
         "\n"
         "In JSON find records where:\n"
         "\n"
@@ -305,8 +305,8 @@ def print_summary() -> None:
         "  max_parameter_length: 50\n"
         "\n"
         "Run:\n"
-        "  rm -f logs/examples/main_parameter_limit.jsonl\n"
-        "  rm -f logs/examples/main_parameter_limit.log\n"
+        "  rm -f var/log/examples/main_parameter_limit.jsonl\n"
+        "  rm -f var/log/examples/main_parameter_limit.log\n"
         "\n"
         "  monitaudit_ENV=dev uv run python "
         "examples/main_parameter_limit.py\n"

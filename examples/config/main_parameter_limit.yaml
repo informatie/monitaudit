@@ -14,10 +14,10 @@ monitaudit:
         enabled: true
       json_sink:
         enabled: true
-        path: logs/examples/main_parameter_limit.jsonl
+        path: var/log/examples/main_parameter_limit.jsonl
       file_sink:
         enabled: true
-        path: logs/examples/main_parameter_limit.log
+        path: var/log/examples/main_parameter_limit.log
       delta_sink:
         enabled: false
         table: main.logging.parameter_limit

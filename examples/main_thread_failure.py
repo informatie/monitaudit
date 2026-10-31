@@ -123,7 +123,7 @@ Important
 ---------
 The worker exception does not disappear.
 
-@obs.trace logs the function_error and then re-raises the original exception.
+@obs.trace var/log the function_error and then re-raises the original exception.
 
 ThreadPoolExecutor stores that exception in the Future.
 
@@ -149,8 +149,8 @@ from concurrent.futures import (
 from pathlib import Path
 from typing import Any
 
-from monitaudit.utilities.build_observability import (
-    build_observability,
+from monitaudit.utilities.build_monitaudit import (
+    build_monitaudit,
 )
 
 
@@ -168,7 +168,7 @@ FAILING_TASK = 2
 
 
 def main() -> None:
-    obs = build_observability(
+    obs = build_monitaudit(
         CONFIG_PATH
     )
 
@@ -399,10 +399,10 @@ def print_summary() -> None:
         "    -> inspect task(2) function_error\n"
         "\n"
         "  FileSink\n"
-        "    -> logs/examples/main_thread_failure.log\n"
+        "    -> var/log/examples/main_thread_failure.log\n"
         "\n"
         "  JsonSink\n"
-        "    -> logs/examples/main_thread_failure.jsonl\n"
+        "    -> var/log/examples/main_thread_failure.jsonl\n"
         "\n"
         "In JSON inspect:\n"
         "  - function\n"

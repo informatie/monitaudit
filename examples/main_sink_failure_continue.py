@@ -72,9 +72,9 @@ Expected output files
 ---------------------
 The successfully configured sinks should still contain records:
 
-    logs/examples/main_sink_failure_continue.log
+    var/log/examples/main_sink_failure_continue.log
 
-    logs/examples/main_sink_failure_continue.jsonl
+    var/log/examples/main_sink_failure_continue.jsonl
 
 Important
 ---------
@@ -100,8 +100,8 @@ from pathlib import Path
 
 from monitaudit.models.base import BaseLog
 from monitaudit.sinks.base import Sink
-from monitaudit.utilities.build_observability import (
-    build_observability,
+from monitaudit.utilities.build_monitaudit import (
+    build_monitaudit,
 )
 
 
@@ -137,7 +137,7 @@ class BrokenSink(Sink):
 
 
 def main() -> None:
-    obs = build_observability(
+    obs = build_monitaudit(
         CONFIG_PATH
     )
 
@@ -261,10 +261,10 @@ def print_summary() -> None:
         "    -> normal application log messages should still appear\n"
         "\n"
         "  FileSink\n"
-        "    -> logs/examples/main_sink_failure_continue.log\n"
+        "    -> var/log/examples/main_sink_failure_continue.log\n"
         "\n"
         "  JsonSink\n"
-        "    -> logs/examples/main_sink_failure_continue.jsonl\n"
+        "    -> var/log/examples/main_sink_failure_continue.jsonl\n"
         "\n"
         "Important verification:\n"
         "\n"

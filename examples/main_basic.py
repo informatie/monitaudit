@@ -29,7 +29,7 @@ Use this example when
 - testing FileSink
 - testing JsonSink
 - testing DeltaSink
-- checking that build_observability() works
+- checking that build_monitaudit() works
 - troubleshooting logging without involving tracing
 
 Do not use this example when
@@ -50,7 +50,7 @@ from typing import Any
 
 import yaml
 
-from monitaudit.utilities.build_observability import build_observability
+from monitaudit.utilities.build_monitaudit import build_monitaudit
 
 EXAMPLE_DIR = Path(__file__).parent
 
@@ -96,7 +96,7 @@ def load_dataset() -> dict[str, Any]:
 
 
 def main() -> None:
-    obs = build_observability()
+    obs = build_monitaudit()
 
     obs.info(
         "Application started",

@@ -127,8 +127,8 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
-from monitaudit.utilities.build_observability import (
-    build_observability,
+from monitaudit.utilities.build_monitaudit import (
+    build_monitaudit,
 )
 
 
@@ -163,7 +163,7 @@ class BrokenRepr:
 
 
 def main() -> None:
-    obs = build_observability(
+    obs = build_monitaudit(
         CONFIG_PATH
     )
 
@@ -407,10 +407,10 @@ def print_summary() -> None:
         "    -> inspect normal trace execution\n"
         "\n"
         "  FileSink\n"
-        "    -> logs/examples/main_json_safe_types.log\n"
+        "    -> var/log/examples/main_json_safe_types.log\n"
         "\n"
         "  JsonSink\n"
-        "    -> logs/examples/main_json_safe_types.jsonl\n"
+        "    -> var/log/examples/main_json_safe_types.jsonl\n"
         "\n"
         "In JSON find records where:\n"
         "\n"

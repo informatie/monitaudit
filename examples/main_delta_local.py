@@ -27,7 +27,7 @@ the current DeltaSink local-path implementation converts the table name to:
 
 Demonstrates
 ------------
-- build_observability()
+- build_monitaudit()
 - local Spark session creation
 - local Delta configuration
 - DeltaSink table initialisation
@@ -101,8 +101,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from monitaudit.utilities.build_observability import (
-    build_observability,
+from monitaudit.utilities.build_monitaudit import (
+    build_monitaudit,
 )
 
 
@@ -125,7 +125,7 @@ DELTA_PATH = Path(
 
 
 def main() -> None:
-    obs = build_observability(
+    obs = build_monitaudit(
         CONFIG_PATH
     )
 

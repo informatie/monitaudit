@@ -98,8 +98,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from monitaudit.utilities.build_observability import (
-    build_observability,
+from monitaudit.utilities.build_monitaudit import (
+    build_monitaudit,
 )
 
 
@@ -113,7 +113,7 @@ CONFIG_PATH = (
 
 
 def main() -> None:
-    obs = build_observability(
+    obs = build_monitaudit(
         CONFIG_PATH
     )
 
@@ -233,10 +233,10 @@ def print_summary() -> None:
         "    -> inspect normal trace hierarchy\n"
         "\n"
         "  FileSink\n"
-        "    -> logs/examples/main_redaction_exact_names.log\n"
+        "    -> var/log/examples/main_redaction_exact_names.log\n"
         "\n"
         "  JsonSink\n"
-        "    -> logs/examples/main_redaction_exact_names.jsonl\n"
+        "    -> var/log/examples/main_redaction_exact_names.jsonl\n"
         "\n"
         "In JSON find records where:\n"
         "\n"

@@ -17,11 +17,11 @@ monitaudit:
 
       json_sink:
         enabled: true
-        path: logs/examples/main_nested_error_parameter.jsonl
+        path: var/log/examples/main_nested_error_parameter.jsonl
 
       file_sink:
         enabled: true
-        path: logs/examples/main_nested_error_parameter.log
+        path: var/log/examples/main_nested_error_parameter.log
 
       delta_sink:
         enabled: false
@@ -43,11 +43,11 @@ monitaudit:
 
       json_sink:
         enabled: true
-        path: logs/examples/main_nested_error_parameter.jsonl
+        path: var/log/examples/main_nested_error_parameter.jsonl
 
       file_sink:
         enabled: true
-        path: logs/examples/main_nested_error_parameter.log
+        path: var/log/examples/main_nested_error_parameter.log
 
       delta_sink:
         enabled: false

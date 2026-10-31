@@ -17,11 +17,11 @@ monitaudit:
 
       json_sink:
         enabled: true
-        path: logs/examples/main_stacktrace.jsonl
+        path: var/log/examples/main_stacktrace.jsonl
 
       file_sink:
         enabled: true
-        path: logs/examples/main_stacktrace.log
+        path: var/log/examples/main_stacktrace.log
 
       delta_sink:
         enabled: false
@@ -43,11 +43,11 @@ monitaudit:
 
       json_sink:
         enabled: true
-        path: logs/examples/main_stacktrace.jsonl
+        path: var/log/examples/main_stacktrace.jsonl
 
       file_sink:
         enabled: true
-        path: logs/examples/main_stacktrace.log
+        path: var/log/examples/main_stacktrace.log
 
       delta_sink:
         enabled: false

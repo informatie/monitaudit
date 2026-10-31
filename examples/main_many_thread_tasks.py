@@ -62,8 +62,8 @@ Use this example when
 ---------------------
 - validating traced functions in a worker pool
 - demonstrating worker reuse
-- checking thread names in monitaudit logs
-- checking thread IDs in monitaudit logs
+- checking thread names in monitaudit var/log
+- checking thread IDs in monitaudit var/log
 - validating many independent root traces
 - checking trace counts
 - checking parameter capture for task numbers
@@ -115,8 +115,8 @@ from concurrent.futures import (
 from pathlib import Path
 from typing import Any
 
-from monitaudit.utilities.build_observability import (
-    build_observability,
+from monitaudit.utilities.build_monitaudit import (
+    build_monitaudit,
 )
 
 
@@ -133,7 +133,7 @@ TASKS = 20
 
 
 def main() -> None:
-    obs = build_observability(
+    obs = build_monitaudit(
         CONFIG_PATH
     )
 
@@ -160,7 +160,7 @@ def main() -> None:
         # Simulate real processing.
         #
         # This also makes concurrent execution and worker reuse easier
-        # to observe in ConsoleSink and persisted logs.
+        # to observe in ConsoleSink and persisted logs
         time.sleep(0.05)
 
         obs.info(
@@ -353,10 +353,10 @@ def print_summary() -> None:
         "    -> inspect interleaved task execution\n"
         "\n"
         "  FileSink\n"
-        "    -> logs/examples/main_many_thread_tasks.log\n"
+        "    -> var/log/examples/main_many_thread_tasks.log\n"
         "\n"
         "  JsonSink\n"
-        "    -> logs/examples/main_many_thread_tasks.jsonl\n"
+        "    -> var/log/examples/main_many_thread_tasks.jsonl\n"
         "\n"
         "In JSON inspect:\n"
         "  - function\n"

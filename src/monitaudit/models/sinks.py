@@ -59,7 +59,7 @@ class ConsoleSinkSettings(ConfigModel):
 class JsonSinkSettings(ConfigModel):
     enabled: bool = False
     path: str = Field(
-        default="logs/monitaudit.jsonl",
+        default="var/log/monitaudit/json_sinl/monitaudit.jsonl",
         min_length=1,
     )
 
@@ -74,12 +74,22 @@ class DeltaSinkSettings(ConfigModel):
 
 class FileSinkSettings(ConfigModel):
     enabled: bool = False
-    path: str = Field(
-        default="volume/metadata/state/logs/monitaudit.log",
-        min_length=1,
+
+    format: Literal["text", "csv"] = Field(
+        default="text",
     )
 
+    delimiter: str = Field(
+        default=";",
+        min_length=1,
+        max_length=1,
+    )
 
+    path: str = Field(
+        default="var/log/monitaudit/file_sink/monitaudit",
+        min_length=1,
+    )
+    
 class SinkSettings(ConfigModel):
     console_sink: ConsoleSinkSettings = Field(
         default_factory=ConsoleSinkSettings

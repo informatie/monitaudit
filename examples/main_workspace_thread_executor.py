@@ -78,8 +78,8 @@ from typing import Any
 
 import yaml
 
-from monitaudit.utilities.build_observability import (
-    build_observability,
+from monitaudit.utilities.build_monitaudit import (
+    build_monitaudit,
 )
 
 
@@ -130,7 +130,7 @@ def load_dataset() -> dict[str, Any]:
 
 
 def main() -> None:
-    obs = build_observability(
+    obs = build_monitaudit(
         CONFIG_PATH
     )
 
@@ -424,7 +424,7 @@ def print_summary() -> None:
         "  - process_element has a unique call_id\n"
         "  - process_element.parent_call_id equals the\n"
         "    process_workspace.call_id\n"
-        "  - logs inside process_element use its call_id\n"
+        "  - var/log inside process_element use its call_id\n"
         "\n"
         "Expected thread behaviour:\n"
         "  - workspace and its elements use the same worker\n"
@@ -447,9 +447,9 @@ def print_summary() -> None:
         "\n"
         "Where to look for the results:\n"
         "  - Console: interleaved nested workspace traces\n"
-        "  - JSON: logs/examples/"
+        "  - JSON: var/log/examples/"
         "main_workspace_thread_executor.jsonl\n"
-        "  - File: logs/examples/"
+        "  - File: var/log/examples/"
         "main_workspace_thread_executor.log\n"
         "\n"
         "Dataset:\n"
