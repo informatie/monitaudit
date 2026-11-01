@@ -1,7 +1,7 @@
 # examples/config/main_console_sink.yaml
 
 monitaudit:
-  application: monitaudit-example-console-sink
+  application: ain_console_sink
 
   global:
     logging:
@@ -16,7 +16,7 @@ monitaudit:
         enabled: true
 
       json_sink:
-        enabled: false
+        enabled: true
 
       file_sink:
         enabled: false

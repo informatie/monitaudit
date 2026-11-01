@@ -13,16 +13,16 @@ monitaudit:
 
       json_sink:
         enabled: true
-        path: examples/output/json_sink/main_all_sinks.jsonl
+        path: output/json_sink/main_all_sink.jsonl
 
       file_sink:
         enabled: true
-        format: text
-        path: examples/output/file_sink/main_all_sinks.log
+        path: output/file_sink/main_all_sink.log
 
       delta_sink:
-        enabled: false
-        table: main.logging.monitaudit_all_sinks
+        enabled: true
+        table: main.alldelta.local
+        path: output/delta_sink
 
   environments:
     dev: {}

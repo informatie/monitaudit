@@ -73,6 +73,7 @@ class DeltaSinkSettings(ConfigModel):
         default=None,
         min_length=1,
     )
+    path: str | None = None
 
 
 class FileSinkSettings(ConfigModel):

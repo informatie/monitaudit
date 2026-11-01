@@ -11,8 +11,8 @@ monitaudit:
       console_sink:
         enabled: true
         parameters:
-          - ws_nummer
-          - element_name
+          - cust_nummer
+          - order_name
 
   environments:
     dev: {}

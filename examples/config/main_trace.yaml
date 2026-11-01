@@ -13,12 +13,12 @@ monitaudit:
 
       json_sink:
         enabled: true
-        path: examples/output/json_sink/main_trace.jsonl
+        path: output/json_sink/main_trace.jsonl
 
       file_sink:
         enabled: true
         format: text
-        path: examples/output/file_sink/main_trace.log
+        path: output/file_sink/main_trace.log
 
       delta_sink:
         enabled: false

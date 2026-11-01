@@ -1,40 +1,40 @@
-workspaces:
-  - ws_nummer: 301
-    ws_naam: Workspace 301
-    elements:
-      - element_code: E001
-        element_name: Klant
-      - element_code: E002
-        element_name: Project
-      - element_code: E003
-        element_name: Contract
-      - element_code: E004
-        element_name: Medewerker
+customers:
+  - cust_nummer: 301
+    cust_naam: customer 301
+    orders:
+      - order_code: E001
+        order_name: Electric
+      - order_code: E002
+        order_name: Food
+      - order_code: E003
+        order_name: Drinks
+      - order_code: E004
+        order_name: Car
 
-  - ws_nummer: 302
-    ws_naam: Workspace 302
-    elements:
-      - element_code: E001
-        element_name: Klant
-      - element_code: E002
-        element_name: Project
-      - element_code: E005
-        element_name: Organisatie
-      - element_code: E006
-        element_name: Document
+  - cust_nummer: 302
+    cust_naam: customer 302
+    orders:
+      - order_code: E001
+        order_name: Electric
+      - order_code: E002
+        order_name: Food
+      - order_code: E005
+        order_name: Holiday
+      - order_code: E006
+        order_name: Pets
 
-  - ws_nummer: 303
-    ws_naam: Workspace 303
-    elements:
-      - element_code: E003
-        element_name: Contract
-      - element_code: E004
-        element_name: Medewerker
-      - element_code: E005
-        element_name: Organisatie
-      - element_code: E006
-        element_name: Document
-      - element_code: E007
-        element_name: Activiteit
-      - element_code: E008
-        element_name: Locatie
+  - cust_nummer: 303
+    cust_naam: customer 303
+    orders:
+      - order_code: E003
+        order_name: Drinks
+      - order_code: E004
+        order_name: Car
+      - order_code: E005
+        order_name: Holiday
+      - order_code: E006
+        order_name: Pets
+      - order_code: E007
+        order_name: Sport
+      - order_code: E008
+        order_name: Travel

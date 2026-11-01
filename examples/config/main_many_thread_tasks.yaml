@@ -1,5 +1,6 @@
 monitaudit:
   application: monitaudit-example-many-thread-tasks
+
   global:
     logging:
       level: DEBUG
@@ -7,18 +8,23 @@ monitaudit:
       parameters: true
       max_parameter_length: 1000
       sink_failure_mode: continue
+
     sinks:
       console_sink:
         enabled: true
+
       json_sink:
         enabled: true
-        path: examples/output/main_many_thread_tasks.jsonl
+        path: output/json_sink/main_many_thread_tasks.jsonl
+
       file_sink:
         enabled: true
-        path: examples/output/main_many_thread_tasks.log
+        path: output/file_sink/main_many_thread_tasks.log
+
       delta_sink:
         enabled: false
         table: main.logging.many_thread_tasks
+
   environments:
     dev: {}
     acc: {}

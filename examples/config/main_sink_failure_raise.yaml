@@ -1,5 +1,6 @@
 monitaudit:
   application: monitaudit-example-sink-failure-raise
+
   global:
     logging:
       level: DEBUG
@@ -7,18 +8,23 @@ monitaudit:
       parameters: true
       max_parameter_length: 1000
       sink_failure_mode: raise
+
     sinks:
       console_sink:
         enabled: true
+
       json_sink:
         enabled: true
-        path: examples/output/main_sink_failure_raise.jsonl
+        path: output/json_sink/main_sink_failure_raise.jsonl
+
       file_sink:
         enabled: true
-        path: examples/output/main_sink_failure_raise.log
+        path: output/file_sink/main_sink_failure_raise.log
+
       delta_sink:
         enabled: false
         table: main.logging.sink_failure_raise
+
   environments:
     dev: {}
     acc: {}

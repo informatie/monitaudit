@@ -29,7 +29,18 @@ def build_monitaudit(
     sinks: list[Sink] = []
 
     # -----------------------------------------------------------------------
-    # FILE SINK
+    # ConsoleSink
+    # -----------------------------------------------------------------------
+
+    if config.sinks.console_sink.enabled:
+        sinks.append(
+            ConsoleSink(
+                parameters=config.sinks.console_sink.parameters,
+            )
+        )
+
+    # -----------------------------------------------------------------------
+    # FileSink
     # -----------------------------------------------------------------------
 
     if config.sinks.file_sink.enabled:
@@ -42,18 +53,7 @@ def build_monitaudit(
         )
 
     # -----------------------------------------------------------------------
-    # CONSOLE SINK
-    # -----------------------------------------------------------------------
-
-    if config.sinks.console_sink.enabled:
-        sinks.append(
-            ConsoleSink(
-                parameters=config.sinks.console_sink.parameters,
-            )
-        )
-
-    # -----------------------------------------------------------------------
-    # JSON SINK
+    # JsonSink
     # -----------------------------------------------------------------------
 
     if config.sinks.json_sink.enabled:
@@ -64,34 +64,46 @@ def build_monitaudit(
         )
 
     # -----------------------------------------------------------------------
-    # DELTA SINK
+    # DeltaSink
     # -----------------------------------------------------------------------
 
     if config.sinks.delta_sink.enabled:
-        table = config.sinks.delta_sink.table
+        delta_settings = config.sinks.delta_sink
+
+        table = delta_settings.table
+        path = delta_settings.path
 
         if table is None:
             raise ValueError(
                 "Delta sink is enabled but no table is configured."
             )
 
-        try:
+        if path is None:
+            raise ValueError(
+                "Delta sink is enabled but no path is configured."
+            )
+
+        # Local Delta tables use the *.local convention.
+        is_databricks = not table.endswith(
+            ".local"
+        )
+
+        if is_databricks:
             spark = run_dbx()
-            is_databricks = True
-        except Exception: # noqa: BLE001
+        else:
             spark = get_spark_session()
-            is_databricks = False
 
         sinks.append(
             DeltaSink(
                 table=table,
+                path=path,
                 spark=spark,
                 is_databricks=is_databricks,
             )
         )
 
     # -----------------------------------------------------------------------
-    # MONITAUDIT
+    # MonitAudit
     # -----------------------------------------------------------------------
 
     return Monitaudit(

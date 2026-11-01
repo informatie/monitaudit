@@ -1,5 +1,6 @@
 monitaudit:
   application: monitaudit-example-redaction
+
   global:
     logging:
       level: DEBUG
@@ -7,36 +8,24 @@ monitaudit:
       parameters: true
       max_parameter_length: 1000
       sink_failure_mode: continue
+
     sinks:
       console_sink:
         enabled: true
+
       json_sink:
         enabled: true
-        path: examples/output/redaction.jsonl
+        path: output/json_sink/redaction.jsonl
+
       file_sink:
         enabled: true
-        path: examples/output/redaction.log
+        path: output/file_sink/redaction.log
+
       delta_sink:
         enabled: false
         table: main.logging.monitaudit_redaction
+
   environments:
-    dev:
-      logging:
-        level: DEBUG
-        timer: true
-        parameters: true
-        max_parameter_length: 1000
-        sink_failure_mode: continue
-      sinks:
-        console_sink:
-          enabled: true
-        json_sink:
-          enabled: true
-          path: examples/output/redaction.jsonl
-        file_sink:
-          enabled: true
-          path: examples/output/redaction.log
-        delta_sink:
-          enabled: false
+    dev: {}
     acc: {}
     prod: {}

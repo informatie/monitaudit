@@ -1,5 +1,6 @@
 monitaudit:
   application: monitaudit-example-nested-error
+
   global:
     logging:
       level: DEBUG
@@ -7,18 +8,23 @@ monitaudit:
       parameters: true
       max_parameter_length: 1000
       sink_failure_mode: continue
+
     sinks:
       console_sink:
         enabled: true
+
       json_sink:
         enabled: true
-        path: examples/output/main_nested_error.jsonl
+        path: output/json_sink/main_nested_error.jsonl
+
       file_sink:
         enabled: false
-        path: examples/output/main_nested_error.log
+        path: output/file_sink/main_nested_error.log
+
       delta_sink:
         enabled: false
         table: main.logging.monitaudit_nested_error
+
   environments:
     dev: {}
     acc: {}

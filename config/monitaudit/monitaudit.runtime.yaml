@@ -12,9 +12,9 @@ monitaudit:
     sinks:
       console_sink:
         parameters:
-          - ws_nummer
-          - element_code
-          - element_name
+          - cust_nummer
+          - order_code
+          - order_name
 
   # -------------------------------------------------------------------------
   # ENVIRONMENT-SPECIFIC SETTINGS
