@@ -1,59 +1,42 @@
 monitaudit:
   application: monitaudit-example-nested-error-json-safe
-
   global:
-    is_databricks: false
-
     logging:
       level: DEBUG
       timer: true
       parameters: true
       max_parameter_length: 1000
       sink_failure_mode: continue
-
     sinks:
       console_sink:
         enabled: true
-
       json_sink:
         enabled: true
-        path: var/log/examples/main_nested_error_json_safe.jsonl
-
+        path: examples/output/main_nested_error_json_safe.jsonl
       file_sink:
         enabled: true
-        path: var/log/examples/main_nested_error_json_safe.log
-
+        path: examples/output/main_nested_error_json_safe.log
       delta_sink:
         enabled: false
         table: main.logging.monitaudit_nested_error_json_safe
-
-  dev:
-    is_databricks: false
-
-    logging:
-      level: DEBUG
-      timer: true
-      parameters: true
-      max_parameter_length: 1000
-      sink_failure_mode: continue
-
-    sinks:
-      console_sink:
-        enabled: true
-
-      json_sink:
-        enabled: true
-        path: var/log/examples/main_nested_error_json_safe.jsonl
-
-      file_sink:
-        enabled: true
-        path: var/log/examples/main_nested_error_json_safe.log
-
-      delta_sink:
-        enabled: false
-
-  acc:
-    is_databricks: false
-
-  prod:
-    is_databricks: false
+  environments:
+    dev:
+      logging:
+        level: DEBUG
+        timer: true
+        parameters: true
+        max_parameter_length: 1000
+        sink_failure_mode: continue
+      sinks:
+        console_sink:
+          enabled: true
+        json_sink:
+          enabled: true
+          path: examples/output/main_nested_error_json_safe.jsonl
+        file_sink:
+          enabled: true
+          path: examples/output/main_nested_error_json_safe.log
+        delta_sink:
+          enabled: false
+    acc: {}
+    prod: {}

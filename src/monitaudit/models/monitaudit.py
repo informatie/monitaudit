@@ -32,7 +32,6 @@ from monitaudit.utilities.json_safe import json_safe_dict
 from monitaudit.utilities.parameters import limit_parameters
 from monitaudit.utilities.redaction import redact_parameters
 
-
 P = ParamSpec("P")
 R = TypeVar("R")
 

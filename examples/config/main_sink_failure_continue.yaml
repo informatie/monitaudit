@@ -1,8 +1,6 @@
 monitaudit:
   application: monitaudit-example-sink-failure-continue
-
   global:
-    is_databricks: false
     logging:
       level: DEBUG
       timer: true
@@ -14,19 +12,14 @@ monitaudit:
         enabled: true
       json_sink:
         enabled: true
-        path: var/log/examples/main_sink_failure_continue.jsonl
+        path: examples/output/main_sink_failure_continue.jsonl
       file_sink:
         enabled: true
-        path: var/log/examples/main_sink_failure_continue.log
+        path: examples/output/main_sink_failure_continue.log
       delta_sink:
         enabled: false
         table: main.logging.sink_failure_continue
-
-  dev:
-    is_databricks: false
-
-  acc:
-    is_databricks: false
-
-  prod:
-    is_databricks: false
+  environments:
+    dev: {}
+    acc: {}
+    prod: {}

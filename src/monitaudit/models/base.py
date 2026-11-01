@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -13,7 +13,7 @@ class BaseLog(BaseModel):
 
     # WHEN
     timestamp: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc)
+        default_factory=lambda: datetime.now(UTC)
     )
     # SEVERITY
     level: str
@@ -27,6 +27,8 @@ class BaseLog(BaseModel):
 
     # WHICH EXECUTION / TRACE
     call_id: str | None = None
+    # voor maser-> deatil
+    # call_id: str = Field(default_factory=lambda: str(uuid4()))
     parent_call_id: str | None = None
     
     # WHAT

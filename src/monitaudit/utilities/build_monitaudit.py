@@ -1,10 +1,7 @@
 # src/monitaudit/utilities/build_monitaudit.py
 
 from __future__ import annotations
-from monitaudit.utilities.get_spark import (
-    get_spark_session,
-    run_dbx,
-)
+
 from pathlib import Path
 
 from monitaudit.models.monitaudit import Monitaudit
@@ -15,82 +12,98 @@ from monitaudit.sinks import (
     JsonSink,
 )
 from monitaudit.sinks.base import Sink
-
-from monitaudit.utilities.get_environment import get_environment
+from monitaudit.utilities.get_spark import (
+    get_spark_session,
+    run_dbx,
+)
 from monitaudit.utilities.load_config import load_config
 
 
 def build_monitaudit(
     config_path: str | Path | None = None,
 ) -> Monitaudit:
-    if config_path is None:
-        config = load_config()
-    else:
-        config = load_config(config_path)
-
-    monitaudit = config.monitaudit
-
-    environment = get_environment()
-
-    settings = monitaudit.for_environment(
-        environment,
+    config = load_config(
+        config_path
     )
 
     sinks: list[Sink] = []
 
-    if settings.sinks.file_sink.enabled:
+    # -----------------------------------------------------------------------
+    # FILE SINK
+    # -----------------------------------------------------------------------
+
+    if config.sinks.file_sink.enabled:
         sinks.append(
             FileSink(
-                path=settings.sinks.file_sink.path,
-                format=settings.sinks.file_sink.format,
-                delimiter=settings.sinks.file_sink.delimiter,                
+                path=config.sinks.file_sink.path,
+                format=config.sinks.file_sink.format,
+                delimiter=config.sinks.file_sink.delimiter,
             )
         )
 
-    if settings.sinks.console_sink.enabled:
+    # -----------------------------------------------------------------------
+    # CONSOLE SINK
+    # -----------------------------------------------------------------------
+
+    if config.sinks.console_sink.enabled:
         sinks.append(
             ConsoleSink(
-                parameters=(
-                    settings
-                    .sinks
-                    .console_sink
-                    .parameters
-                ),
+                parameters=config.sinks.console_sink.parameters,
             )
         )
 
-    if settings.sinks.json_sink.enabled:
+    # -----------------------------------------------------------------------
+    # JSON SINK
+    # -----------------------------------------------------------------------
+
+    if config.sinks.json_sink.enabled:
         sinks.append(
             JsonSink(
-                path=settings.sinks.json_sink.path,
+                path=config.sinks.json_sink.path,
             )
         )
 
-    if settings.sinks.delta_sink.enabled:
-        if settings.is_databricks:
-            spark = run_dbx()
-        else:
-            spark = get_spark_session()
+    # -----------------------------------------------------------------------
+    # DELTA SINK
+    # -----------------------------------------------------------------------
 
-        if settings.sinks.delta_sink.table is None:
+    if config.sinks.delta_sink.enabled:
+        table = config.sinks.delta_sink.table
+
+        if table is None:
             raise ValueError(
                 "Delta sink is enabled but no table is configured."
             )
 
+        try:
+            spark = run_dbx()
+            is_databricks = True
+        except Exception: # noqa: BLE001
+            spark = get_spark_session()
+            is_databricks = False
+
         sinks.append(
             DeltaSink(
-                table=settings.sinks.delta_sink.table,
+                table=table,
                 spark=spark,
-                is_databricks=settings.is_databricks,
+                is_databricks=is_databricks,
             )
         )
 
+    # -----------------------------------------------------------------------
+    # MONITAUDIT
+    # -----------------------------------------------------------------------
+
     return Monitaudit(
-        monitaudit.application,
-        environment,
+        config.application,
+        config.environment,
         *sinks,
-        timer=settings.logging.timer,
-        parameters=settings.logging.parameters,
-        max_parameter_length=settings.logging.max_parameter_length,
-        sink_failure_mode=settings.logging.sink_failure_mode,
+        timer=config.logging.timer,
+        parameters=config.logging.parameters,
+        max_parameter_length=(
+            config.logging.max_parameter_length
+        ),
+        sink_failure_mode=(
+            config.logging.sink_failure_mode
+        ),
     )

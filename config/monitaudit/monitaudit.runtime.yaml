@@ -1,0 +1,64 @@
+# monitaudit.runtime.yaml
+# Application-specific MonitAudit runtime configuration.
+
+monitaudit:
+  application: myappl
+
+  # -------------------------------------------------------------------------
+  # GLOBAL APPLICATION SETTINGS
+  # -------------------------------------------------------------------------
+
+  global:
+    sinks:
+      console_sink:
+        parameters:
+          - ws_nummer
+          - element_code
+          - element_name
+
+  # -------------------------------------------------------------------------
+  # ENVIRONMENT-SPECIFIC SETTINGS
+  # -------------------------------------------------------------------------
+
+  environments:
+
+    # -----------------------------------------------------------------------
+    # DEVELOPMENT
+    # -----------------------------------------------------------------------
+
+    dev:
+      sinks:
+        delta_sink:
+          table: dev.monitaudit.monitaudit_logs
+
+    # -----------------------------------------------------------------------
+    # ACCEPTANCE
+    # -----------------------------------------------------------------------
+
+    acc:
+      sinks:
+        console_sink:
+          enabled: false
+
+        delta_sink:
+          table: acc.monitaudit.monitaudit_logs
+
+    # -----------------------------------------------------------------------
+    # PRODUCTION
+    # -----------------------------------------------------------------------
+
+    prod:
+      logging:
+        level: WARNING
+
+      sinks:
+        console_sink:
+          enabled: false
+
+        json_sink:
+          enabled: true
+          path: /var/log/monitaudit/monitaudit.jsonl
+
+        delta_sink:
+          enabled: true
+          table: prod.monitaudit.monitaudit_logs

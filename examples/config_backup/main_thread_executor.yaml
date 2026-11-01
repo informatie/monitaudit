@@ -1,0 +1,46 @@
+monitaudit:
+  application: monitaudit-example-thread-executor
+  global:
+    is_databricks: false
+    logging:
+      level: DEBUG
+      timer: true
+      parameters: true
+      max_parameter_length: 1000
+      sink_failure_mode: continue
+    sinks:
+      console_sink:
+        enabled: true
+      json_sink:
+        enabled: true
+        path: examples/output/main_thread_executor.jsonl
+      file_sink:
+        enabled: true
+        path: examples/output/main_thread_executor.log
+      delta_sink:
+        enabled: false
+        table: main.logging.monitaudit_thread_executor
+  environments:
+    dev:
+      is_databricks: false
+      logging:
+        level: DEBUG
+        timer: true
+        parameters: true
+        max_parameter_length: 1000
+        sink_failure_mode: continue
+      sinks:
+        console_sink:
+          enabled: true
+        json_sink:
+          enabled: true
+          path: examples/output/main_thread_executor.jsonl
+        file_sink:
+          enabled: true
+          path: examples/output/main_thread_executor.log
+        delta_sink:
+          enabled: false
+    acc:
+      is_databricks: false
+    prod:
+      is_databricks: false

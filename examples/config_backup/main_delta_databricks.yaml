@@ -1,0 +1,27 @@
+# examples/config/main_delta_databricks.yaml
+
+monitaudit:
+  application: monitaudit-example-delta-databricks
+
+  global:
+    logging:
+      level: DEBUG
+
+    sinks:
+      console_sink:
+        enabled: true
+
+      json_sink:
+        enabled: false
+
+      file_sink:
+        enabled: false
+
+      delta_sink:
+        enabled: true
+        table: main.logging.delta_databricks
+
+  environments:
+    dev: {}
+    acc: {}
+    prod: {}

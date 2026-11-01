@@ -1,0 +1,18 @@
+2026-11-01T01:02:39.411762+00:00 INFO     application=monitaudit-example-all-sinks environment=dev correlation_id=f05ac5ab-014b-47c9-89f4-59112e776d10 run_id=- call_id=- parent_call_id=- event=- duration_ms=- __main__.main                    All-sinks example started        parameters={} attributes={"example":"main_all_sinks","delta_table":"main.logging.monitaudit_all_sinks"}
+2026-11-01T01:02:39.412006+00:00 INFO     application=monitaudit-example-all-sinks environment=dev correlation_id=f05ac5ab-014b-47c9-89f4-59112e776d10 run_id=- call_id=- parent_call_id=- event=- duration_ms=- __main__.main                    Structured record sent to all sinks parameters={} attributes={"workspace":301,"element_code":"E001","status":"running"}
+2026-11-01T01:02:39.412124+00:00 INFO     application=monitaudit-example-all-sinks environment=dev correlation_id=f05ac5ab-014b-47c9-89f4-59112e776d10 run_id=- call_id=6e497cdf-8f0b-47ec-9ff4-7b0fdd66c55a parent_call_id=- event=function_start duration_ms=- __main__.operation               operation started                parameters={"value":21,"multiplier":2} attributes={"event":"function_start"}
+2026-11-01T01:02:39.412193+00:00 INFO     application=monitaudit-example-all-sinks environment=dev correlation_id=f05ac5ab-014b-47c9-89f4-59112e776d10 run_id=- call_id=6e497cdf-8f0b-47ec-9ff4-7b0fdd66c55a parent_call_id=- event=- duration_ms=- __main__.operation               Operation running                parameters={} attributes={"value":21,"multiplier":2}
+2026-11-01T01:02:39.412246+00:00 INFO     application=monitaudit-example-all-sinks environment=dev correlation_id=f05ac5ab-014b-47c9-89f4-59112e776d10 run_id=- call_id=6e497cdf-8f0b-47ec-9ff4-7b0fdd66c55a parent_call_id=- event=function_end duration_ms=0.121 __main__.operation               operation completed              parameters={"value":21,"multiplier":2} attributes={"event":"function_end"}
+2026-11-01T01:02:39.412299+00:00 INFO     application=monitaudit-example-all-sinks environment=dev correlation_id=f05ac5ab-014b-47c9-89f4-59112e776d10 run_id=- call_id=- parent_call_id=- event=- duration_ms=- __main__.main                    Operation result received        parameters={} attributes={"result":42}
+2026-11-01T01:02:39.412504+00:00 ERROR    application=monitaudit-example-all-sinks environment=dev correlation_id=f05ac5ab-014b-47c9-89f4-59112e776d10 run_id=- call_id=- parent_call_id=- event=- duration_ms=- __main__.main                    Demonstration error sent to all sinks parameters={} attributes={"component":"main_all_sinks"}
+error_type=ValueError
+error_message=All-sinks demonstration failure
+traceback:
+Traceback (most recent call last):
+  File "/home/zadmin/projects/monitaudit/examples/sinks/main_all_sinks.py", line 114, in main
+    raise ValueError(
+        "All-sinks demonstration failure"
+    )
+ValueError: All-sinks demonstration failure
+2026-11-01T01:02:39.412570+00:00 WARNING  application=monitaudit-example-all-sinks environment=dev correlation_id=f05ac5ab-014b-47c9-89f4-59112e776d10 run_id=- call_id=- parent_call_id=- event=- duration_ms=- __main__.main                    All-sinks demonstration warning  parameters={} attributes={"reason":"Intentional example warning"}
+2026-11-01T01:02:39.412620+00:00 INFO     application=monitaudit-example-all-sinks environment=dev correlation_id=f05ac5ab-014b-47c9-89f4-59112e776d10 run_id=- call_id=- parent_call_id=- event=- duration_ms=- __main__.main                    All-sinks example completed      parameters={} attributes={"example":"main_all_sinks"}

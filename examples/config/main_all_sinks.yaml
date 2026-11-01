@@ -1,32 +1,30 @@
+# examples/config/main_all_sinks.yaml
+
 monitaudit:
   application: monitaudit-example-all-sinks
 
   global:
-    is_databricks: false
     logging:
       level: DEBUG
-      timer: true
-      parameters: true
-      max_parameter_length: 1000
-      sink_failure_mode: continue
+
     sinks:
       console_sink:
         enabled: true
+
       json_sink:
         enabled: true
-        path: var/log/examples/main_all_sinks.jsonl
+        path: examples/output/json_sink/main_all_sinks.jsonl
+
       file_sink:
         enabled: true
-        path: var/log/examples/main_all_sinks.log
+        format: text
+        path: examples/output/file_sink/main_all_sinks.log
+
       delta_sink:
-        enabled: true
-        table: main.logging.all_sinks
+        enabled: false
+        table: main.logging.monitaudit_all_sinks
 
-  dev:
-    is_databricks: false
-
-  acc:
-    is_databricks: false
-
-  prod:
-    is_databricks: false
+  environments:
+    dev: {}
+    acc: {}
+    prod: {}

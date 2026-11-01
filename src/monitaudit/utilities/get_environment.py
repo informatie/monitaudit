@@ -5,7 +5,6 @@ from typing import cast
 
 from monitaudit.models.sinks import Environment
 
-
 _ALLOWED_ENVIRONMENTS = {
     "dev",
     "acc",

@@ -26,7 +26,6 @@ from monitaudit.models.log import (
 from monitaudit.sinks.base import Sink
 from monitaudit.utilities.json_safe import json_safe_dict
 
-
 SinkFailureMode: TypeAlias = Literal[
     "continue",
     "raise",

@@ -1,0 +1,30 @@
+# examples/config/main_console_sink.yaml
+
+monitaudit:
+  application: monitaudit-example-console-sink
+
+  global:
+    logging:
+      level: DEBUG
+      timer: true
+      parameters: true
+      max_parameter_length: 1000
+      sink_failure_mode: continue
+
+    sinks:
+      console_sink:
+        enabled: true
+
+      json_sink:
+        enabled: false
+
+      file_sink:
+        enabled: false
+
+      delta_sink:
+        enabled: false
+
+  environments:
+    dev: {}
+    acc: {}
+    prod: {}

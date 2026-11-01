@@ -10,7 +10,6 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
-
 JsonValue = (
     None
     | bool
@@ -77,7 +76,7 @@ def _safe_repr(
 ) -> str:
     try:
         return repr(value)
-    except Exception:
+    except Exception: # noqa: BLE001
         return (
             f"<unserializable "
             f"{type(value).__name__}>"

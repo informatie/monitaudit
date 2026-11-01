@@ -5,6 +5,7 @@ from typing import Any
 
 from monitaudit.models.base import BaseLog
 
+
 def _serialize_traceback(log: BaseLog) -> str | None:
     traceback_lines = getattr(log, "traceback", None)
 

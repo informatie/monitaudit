@@ -14,11 +14,11 @@ from threading import Lock
 from typing import IO, Literal
 
 from monitaudit.models.base import BaseLog
-from monitaudit.sinks.base import Sink
 from monitaudit.models.mapping import (
     LOG_FIELD_NAMES,
     log_record,
 )
+from monitaudit.sinks.base import Sink
 
 FileFormat = Literal["text", "csv"]
 
@@ -338,18 +338,17 @@ class FileSink(Sink):
         try:
             text = self._format(log)
 
-            with self._exclusive_write_lock():
-                with self.path.open(
-                    mode="a",
-                    encoding="utf-8",
-                ) as file:
-                    file.write(text)
-                    file.write("\n")
+            with self._exclusive_write_lock(), self.path.open(
+                mode="a",
+                encoding="utf-8",
+            ) as file:
+                file.write(text)
+                file.write("\n")
 
-                    self._flush(
-                        file,
-                        synchronise=self.fsync,
-                    )
+                self._flush(
+                    file,
+                    synchronise=self.fsync,
+                )
 
         except FileSinkError:
             raise

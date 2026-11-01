@@ -6,7 +6,6 @@ from typing import Any
 
 from monitaudit.models.base import BaseLog
 
-
 LOG_FIELD_NAMES: tuple[str, ...] = (
     # WHEN
     "timestamp",

@@ -1,8 +1,6 @@
 monitaudit:
   application: monitaudit-example-json-sink
-
   global:
-    is_databricks: false
     logging:
       level: DEBUG
       timer: true
@@ -14,19 +12,14 @@ monitaudit:
         enabled: true
       json_sink:
         enabled: true
-        path: var/log/examples/main_json_sink.jsonl
+        path: examples/output/main_json_sink.jsonl
       file_sink:
         enabled: true
-        path: var/log/examples/main_json_sink.log
+        path: examples/output/main_json_sink.log
       delta_sink:
         enabled: false
         table: main.logging.json_sink
-
-  dev:
-    is_databricks: false
-
-  acc:
-    is_databricks: false
-
-  prod:
-    is_databricks: false
+  environments:
+    dev: {}
+    acc: {}
+    prod: {}

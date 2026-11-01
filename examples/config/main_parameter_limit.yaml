@@ -1,8 +1,6 @@
 monitaudit:
   application: monitaudit-example-parameter-limit
-
   global:
-    is_databricks: false
     logging:
       level: DEBUG
       timer: true
@@ -14,19 +12,14 @@ monitaudit:
         enabled: true
       json_sink:
         enabled: true
-        path: var/log/examples/main_parameter_limit.jsonl
+        path: examples/output/main_parameter_limit.jsonl
       file_sink:
         enabled: true
-        path: var/log/examples/main_parameter_limit.log
+        path: examples/output/main_parameter_limit.log
       delta_sink:
         enabled: false
         table: main.logging.parameter_limit
-
-  dev:
-    is_databricks: false
-
-  acc:
-    is_databricks: false
-
-  prod:
-    is_databricks: false
+  environments:
+    dev: {}
+    acc: {}
+    prod: {}

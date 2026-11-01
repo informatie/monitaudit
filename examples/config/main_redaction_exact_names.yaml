@@ -1,8 +1,6 @@
 monitaudit:
   application: monitaudit-example-redaction-exact-names
-
   global:
-    is_databricks: false
     logging:
       level: DEBUG
       timer: true
@@ -14,19 +12,14 @@ monitaudit:
         enabled: true
       json_sink:
         enabled: true
-        path: var/log/examples/main_redaction_exact_names.jsonl
+        path: examples/output/main_redaction_exact_names.jsonl
       file_sink:
         enabled: true
-        path: var/log/examples/main_redaction_exact_names.log
+        path: examples/output/main_redaction_exact_names.log
       delta_sink:
         enabled: false
         table: main.logging.redaction_exact_names
-
-  dev:
-    is_databricks: false
-
-  acc:
-    is_databricks: false
-
-  prod:
-    is_databricks: false
+  environments:
+    dev: {}
+    acc: {}
+    prod: {}
