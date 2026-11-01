@@ -10,8 +10,12 @@ from .sinks import (
     FileSink,
     JsonSink,
 )
+from monitaudit.utilities.build_monitaudit import build_monitaudit
 
-__version__ = "1.2.4"
+def monitaudit_init():
+    return build_monitaudit()
+
+__version__ = "1.2.5"
 
 __all__ = [
     "ConsoleSink",

@@ -60,13 +60,32 @@ sed -i "s/__version__ = .*/__version__ = \"$NEW_VERSION\"/g" "$INIT_FILE"
 
 #### 6. Clear old distributions, build, and publish safely
 
+set -euo pipefail
+
 rm -rf dist/
-# uv build 
+
+echo "Generating PyPI README..."
+uv run python scripts/build_pypi_readme.py
+
+echo "Building Monitaudit..."
+uv build --wheel
+
+echo "Validating distribution..."
+uvx twine check dist/*
 
 if [ -f ".env" ]; then
+    echo "Loading PyPI credentials..."
+    set -a
     source .env
+    set +a
 fi
 
-# uv publish 
+if [ -z "${PYPI_API_TOKEN:-}" ]; then
+    echo "Error: PYPI_API_TOKEN is not set."
+    exit 1
+fi
 
-echo "Success! Monitaudit $NEW_VERSION is published."
+echo "Publishing Monitaudit ${NEW_VERSION}..."
+uv publish --token "$PYPI_API_TOKEN" dist/*.whl
+
+echo "Success! Monitaudit ${NEW_VERSION} is published."

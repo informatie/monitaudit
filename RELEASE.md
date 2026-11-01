@@ -9,6 +9,15 @@ MonitAudit follows Semantic Versioning:
 - **PATCH** – backwards-compatible fixes, improvements and maintenance
 
 ---
+## 1.3.0 - 2026-11-02
+
+### Changed
+
+- usage.md text updated and file renamed.
+- readme.md text updated and file renamed.
+- link github monitaudit-examples added.
+- release.sh fixed.
+- examples of the config and runtime settings in README.md.
 
 ## 1.2.4 - 2026-11-01
 
