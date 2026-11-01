@@ -11,7 +11,7 @@ from .sinks import (
     JsonSink,
 )
 
-__version__ = "1.2.3"
+__version__ = "1.2.4"
 
 __all__ = [
     "ConsoleSink",

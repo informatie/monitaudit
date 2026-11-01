@@ -26,7 +26,6 @@ dist/
 downloads/
 eggs/
 .eggs/
-examples/
 parts/
 sdist/
 wheels/
@@ -75,6 +74,14 @@ uv.toml
 # IMPORTANT:
 # uv.lock is deliberately NOT ignored.
 # Commit uv.lock for reproducible development environments.
+
+
+# ------------------------------------------------------------
+# Examples
+# ------------------------------------------------------------
+# Ignore the complete examples directory, including all files
+# and subdirectories.
+examples/
 
 
 # ------------------------------------------------------------
