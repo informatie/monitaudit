@@ -1,7 +1,10 @@
+# src/monitaudit/sinks/delta.py
+
 from __future__ import annotations
 
 import json
 import re
+from pathlib import Path
 from typing import Any
 
 from pyspark.sql import DataFrame, SparkSession
@@ -24,7 +27,8 @@ STRING_MAP = MapType(
     valueContainsNull=True,
 )
 
-monitaudit_SCHEMA = StructType(
+
+MONITAUDIT_SCHEMA = StructType(
     [
         StructField("timestamp", TimestampType(), False),
         StructField("level", StringType(), False),
@@ -58,62 +62,190 @@ class DeltaSink(Sink):
         self,
         table: str,
         spark: SparkSession,
+        path: str | Path | None = None,
         is_databricks: bool = False,
     ) -> None:
-        self.table = self._validate_table_name(table)
+        self.table = self._validate_table_name(
+            table
+        )
+
         self.spark = spark
         self.is_databricks = is_databricks
 
+        self.path = self._resolve_path(
+            path
+        )
+
         self._ensure_table()
 
+    # -----------------------------------------------------------------------
+    # Validation
+    # -----------------------------------------------------------------------
+
     @classmethod
-    def _validate_table_name(cls, table: str) -> str:
+    def _validate_table_name(
+        cls,
+        table: str,
+    ) -> str:
         if not isinstance(table, str):
-            raise TypeError("Delta table name must be a string.")
+            raise TypeError(
+                "Delta table name must be a string."
+            )
 
         table = table.strip()
 
         if not table:
-            raise ValueError("Delta table name cannot be empty.")
+            raise ValueError(
+                "Delta table name cannot be empty."
+            )
 
-        if not cls._TABLE_NAME_PATTERN.fullmatch(table):
+        if not cls._TABLE_NAME_PATTERN.fullmatch(
+            table
+        ):
             raise ValueError(
                 f"Invalid Delta table name: {table!r}. "
-                "Expected 'catalog.schema.table'. Each part may contain "
-                "only letters, numbers and underscores, and may not "
-                "start with a number."
+                "Expected 'catalog.schema.table'. Each part may "
+                "contain only letters, numbers and underscores, "
+                "and may not start with a number."
             )
 
         return table
 
-    def _table_parts(self) -> tuple[str, str, str]:
-        catalog, schema, table = self.table.split(".", maxsplit=2)
-        return catalog, schema, table
+    # -----------------------------------------------------------------------
+    # Table
+    # -----------------------------------------------------------------------
 
-    def _quoted_table_name(self) -> str:
+    def _table_parts(
+        self,
+    ) -> tuple[str, str, str]:
+        catalog, schema, table = self.table.split(
+            ".",
+            maxsplit=2,
+        )
+
+        return (
+            catalog,
+            schema,
+            table,
+        )
+
+    def _quoted_table_name(
+        self,
+    ) -> str:
         catalog, schema, table = self._table_parts()
-        return f"`{catalog}`.`{schema}`.`{table}`"
 
-    def _local_path(self) -> str:
-        return self.table.replace(".", "/")
+        return (
+            f"`{catalog}`."
+            f"`{schema}`."
+            f"`{table}`"
+        )
 
-    def _ensure_table(self) -> None:
+    # -----------------------------------------------------------------------
+    # Local path
+    # -----------------------------------------------------------------------
+
+    def _resolve_path(
+        self,
+        path: str | Path | None,
+    ) -> Path | None:
+        """
+        Resolve the configured local Delta destination.
+
+        The configured path is the base directory.
+
+        Example:
+
+            table = main.delta.local
+            path  = output/delta_sink
+
+        becomes:
+
+            output/delta_sink/main_delta_local
+
+        Databricks mode does not require a local path.
+        """
+
+        if self.is_databricks:
+            return None
+
+        if path is None:
+            raise ValueError(
+                "DeltaSink local mode requires a configured path."
+            )
+
+        base_path = Path(
+            path
+        ).expanduser()
+
+        table_directory = self.table.replace(
+            ".",
+            "_",
+        )
+
+        return (
+            base_path
+            / table_directory
+        ).resolve()
+
+    @property
+    def local_path(
+        self,
+    ) -> Path | None:
+        """
+        Return the physical local Delta path.
+
+        Returns None when running in Databricks mode.
+        """
+
+        return self.path
+
+    def _require_local_path(
+        self,
+    ) -> Path:
+        if self.path is None:
+            raise RuntimeError(
+                "Local Delta path is unavailable."
+            )
+
+        return self.path
+
+    # -----------------------------------------------------------------------
+    # Initialisation
+    # -----------------------------------------------------------------------
+
+    def _ensure_table(
+        self,
+    ) -> None:
         dataframe = self.spark.createDataFrame(
             [],
-            schema=monitaudit_SCHEMA,
+            schema=MONITAUDIT_SCHEMA,
         )
 
         if self.is_databricks:
-            self._ensure_databricks_table(dataframe)
+            self._ensure_databricks_table(
+                dataframe
+            )
         else:
-            self._ensure_local_table(dataframe)
+            self._ensure_local_table(
+                dataframe
+            )
 
-    def _ensure_local_table(self, dataframe: DataFrame) -> None:
+    def _ensure_local_table(
+        self,
+        dataframe: DataFrame,
+    ) -> None:
+        path = self._require_local_path()
+
+        path.parent.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+
         (
             dataframe.write
             .format("delta")
             .mode("ignore")
-            .save(self._local_path())
+            .save(str(path))
         )
 
     def _ensure_databricks_table(
@@ -125,8 +257,9 @@ class DeltaSink(Sink):
         self.spark.sql(
             f"CREATE CATALOG IF NOT EXISTS `{catalog}`"
         )
+
         self.spark.sql(
-            f"CREATE SCHEMA IF NOT EXISTS "
+            "CREATE SCHEMA IF NOT EXISTS "
             f"`{catalog}`.`{schema}`"
         )
 
@@ -134,28 +267,48 @@ class DeltaSink(Sink):
             dataframe.write
             .format("delta")
             .mode("ignore")
-            .saveAsTable(self._quoted_table_name())
+            .saveAsTable(
+                self._quoted_table_name()
+            )
         )
 
-    def write(self, log: BaseLog) -> None:
-        row = self._to_row(log)
+    # -----------------------------------------------------------------------
+    # Write
+    # -----------------------------------------------------------------------
+
+    def write(
+        self,
+        log: BaseLog,
+    ) -> None:
+        row = self._to_row(
+            log
+        )
 
         dataframe = self.spark.createDataFrame(
             [row],
-            schema=monitaudit_SCHEMA,
+            schema=MONITAUDIT_SCHEMA,
         )
 
         if self.is_databricks:
-            self._write_databricks(dataframe)
+            self._write_databricks(
+                dataframe
+            )
         else:
-            self._write_local(dataframe)
+            self._write_local(
+                dataframe
+            )
 
-    def _write_local(self, dataframe: DataFrame) -> None:
+    def _write_local(
+        self,
+        dataframe: DataFrame,
+    ) -> None:
+        path = self._require_local_path()
+
         (
             dataframe.write
             .format("delta")
             .mode("append")
-            .save(self._local_path())
+            .save(str(path))
         )
 
     def _write_databricks(
@@ -166,11 +319,19 @@ class DeltaSink(Sink):
             dataframe.write
             .format("delta")
             .mode("append")
-            .saveAsTable(self._quoted_table_name())
+            .saveAsTable(
+                self._quoted_table_name()
+            )
         )
 
+    # -----------------------------------------------------------------------
+    # Row conversion
+    # -----------------------------------------------------------------------
+
     @staticmethod
-    def _to_row(log: BaseLog) -> dict[str, Any]:
+    def _to_row(
+        log: BaseLog,
+    ) -> dict[str, Any]:
         return {
             "timestamp": log.timestamp,
             "level": str(log.level),
@@ -187,7 +348,9 @@ class DeltaSink(Sink):
             "duration_ms": log.duration_ms,
             "module": log.module,
             "function": log.function,
-            "parameters": _to_json(log.parameters),
+            "parameters": _to_json(
+                log.parameters
+            ),
             "attributes": _stringify_mapping(
                 log.attributes
             ),
@@ -201,11 +364,15 @@ class DeltaSink(Sink):
                 "error_message",
                 None,
             ),
-            "traceback": _serialize_traceback(log),
+            "traceback": _serialize_traceback(
+                log
+            ),
         }
 
 
-def _serialize_traceback(log: BaseLog) -> str | None:
+def _serialize_traceback(
+    log: BaseLog,
+) -> str | None:
     traceback_lines = getattr(
         log,
         "traceback",
@@ -215,33 +382,54 @@ def _serialize_traceback(log: BaseLog) -> str | None:
     if not traceback_lines:
         return None
 
-    return "".join(traceback_lines)
+    return "".join(
+        traceback_lines
+    )
 
 
 def _stringify_mapping(
     values: dict[str, Any],
 ) -> dict[str, str]:
     return {
-        str(key): _stringify_value(value)
+        str(key): _stringify_value(
+            value
+        )
         for key, value in values.items()
     }
 
 
-def _stringify_value(value: Any) -> str:
-    if isinstance(value, (set, frozenset)):
+def _stringify_value(
+    value: Any,
+) -> str:
+    if isinstance(
+        value,
+        (
+            set,
+            frozenset,
+        ),
+    ):
         value = sorted(
             value,
             key=str,
         )
 
-    if isinstance(value, (dict, list, tuple)):
+    if isinstance(
+        value,
+        (
+            dict,
+            list,
+            tuple,
+        ),
+    ):
         return json.dumps(
             value,
             default=str,
             sort_keys=True,
         )
 
-    return str(value)
+    return str(
+        value
+    )
 
 
 def _to_json(

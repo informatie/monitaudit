@@ -1,12 +1,20 @@
-observability:
+# examples/config/main_parameter.yaml
+
+monitaudit:
   application: monitaudit-parameter-example
-  environment: development
 
-sinks:
-  console:
-    enabled: true
-    level: INFO
+  global:
+    logging:
+      level: INFO
 
-    parameters:
-      - ws_nummer
-      - element_name
+    sinks:
+      console_sink:
+        enabled: true
+        parameters:
+          - cust_nummer
+          - order_name
+
+  environments:
+    dev: {}
+    acc: {}
+    prod: {}

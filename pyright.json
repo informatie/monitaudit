@@ -1,0 +1,17 @@
+{
+  "include": [
+    "src",
+    "tests"
+  ],
+  "exclude": [
+    ".venv",
+    "build",
+    "dist"
+  ],
+  "typeCheckingMode": "strict",
+  "pythonVersion": "3.11",
+  "reportUnknownMemberType": true,
+  "reportUnknownArgumentType": true,
+  "reportUnknownVariableType": true,
+  "reportMissingTypeStubs": false
+}

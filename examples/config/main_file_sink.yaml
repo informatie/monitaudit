@@ -2,31 +2,30 @@ monitaudit:
   application: monitaudit-example-file-sink
 
   global:
-    is_databricks: false
     logging:
       level: DEBUG
       timer: true
       parameters: true
       max_parameter_length: 1000
       sink_failure_mode: continue
+
     sinks:
       console_sink:
         enabled: true
+
       json_sink:
-        enabled: true
-        path: logs/examples/main_file_sink.jsonl
+        enabled: false
+
       file_sink:
         enabled: true
-        path: logs/examples/main_file_sink.log
+        path: output/file_sink/main_file_sink.log
+
       delta_sink:
         enabled: false
-        table: main.logging.file_sink
 
-  dev:
-    is_databricks: false
+  environments:
+    dev: {}
 
-  acc:
-    is_databricks: false
+    acc: {}
 
-  prod:
-    is_databricks: false
+    prod: {}

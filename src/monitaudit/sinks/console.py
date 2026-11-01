@@ -1,16 +1,15 @@
 from __future__ import annotations
 
-from threading import Lock
 import json
-from monitaudit.models.base import BaseLog
-from monitaudit.sinks.base import Sink
+from threading import Lock
 
 from monitaudit.constants import (
     FUNCTION_END,
     FUNCTION_ERROR,
     FUNCTION_START,
 )
-
+from monitaudit.models.base import BaseLog
+from monitaudit.sinks.base import Sink
 
 TRACE_END_EVENTS = frozenset(
     {
@@ -49,7 +48,7 @@ class ConsoleSink(Sink):
             parameters = self._format_parameters(log)
             print(
                 f"{log.timestamp.isoformat()} "
-                f"{str(log.level):<8} "
+                f"{log.level!s:<8} "
                 f"{location:<{self.location_width}} "
                 f"{indent}{log.message}",
                 f"{parameters}"

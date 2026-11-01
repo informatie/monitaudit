@@ -7,10 +7,18 @@ from collections.abc import Callable
 from contextvars import ContextVar
 from functools import wraps
 from time import perf_counter
-from typing import Any, ParamSpec, TypeVar, cast
+from typing import Any, ParamSpec, TypeVar
 from uuid import uuid4
 
-from monitaudit.logger import monitauditLogger
+from monitaudit.constants import (
+    FUNCTION_END,
+    FUNCTION_ERROR,
+    FUNCTION_START,
+)
+from monitaudit.logger import (
+    SinkFailureMode,
+    monitauditLogger,
+)
 from monitaudit.models.context import LogContext
 from monitaudit.models.log import (
     CriticalLog,
@@ -20,9 +28,9 @@ from monitaudit.models.log import (
     WarningLog,
 )
 from monitaudit.sinks.base import Sink
-from monitaudit.utilities.redaction import redact_parameters
 from monitaudit.utilities.json_safe import json_safe_dict
 from monitaudit.utilities.parameters import limit_parameters
+from monitaudit.utilities.redaction import redact_parameters
 
 P = ParamSpec("P")
 R = TypeVar("R")
@@ -33,13 +41,8 @@ _current_call_id: ContextVar[str | None] = ContextVar(
     default=None,
 )
 
-from monitaudit.constants import (
-    FUNCTION_END,
-    FUNCTION_ERROR,
-    FUNCTION_START,
-)
 
-class Observability:
+class Monitaudit:
     def __init__(
         self,
         application: str,
@@ -51,19 +54,36 @@ class Observability:
         timer: bool = True,
         parameters: bool = True,
         max_parameter_length: int = 1000,
-        sink_failure_mode: str = "continue",
+        sink_failure_mode: SinkFailureMode = "continue",
     ) -> None:
-        context_data: dict[str, Any] = {
-            "application": application,
-            "environment": environment,
-            "run_id": run_id,
-            "attributes": context_attributes or {},
-        }
+        if max_parameter_length < 0:
+            raise ValueError(
+                "max_parameter_length must be 0 or greater."
+            )
 
-        if correlation_id is not None:
-            context_data["correlation_id"] = correlation_id
-
-        self.context = LogContext(**context_data)
+        if correlation_id is None:
+            self.context = LogContext(
+                application=application,
+                environment=environment,
+                run_id=run_id,
+                attributes=(
+                    dict(context_attributes)
+                    if context_attributes is not None
+                    else {}
+                ),
+            )
+        else:
+            self.context = LogContext(
+                application=application,
+                environment=environment,
+                correlation_id=correlation_id,
+                run_id=run_id,
+                attributes=(
+                    dict(context_attributes)
+                    if context_attributes is not None
+                    else {}
+                ),
+            )
 
         self.timer = timer
         self.parameters = parameters
@@ -72,7 +92,7 @@ class Observability:
         self.logger = monitauditLogger(
             self.context,
             *sinks,
-            sink_failure_mode=sink_failure_mode,            
+            sink_failure_mode=sink_failure_mode,
         )
 
     @property
@@ -86,7 +106,7 @@ class Observability:
     @property
     def current_call_id(self) -> str | None:
         return _current_call_id.get()
-    
+
     def debug(
         self,
         message: str,
@@ -164,7 +184,10 @@ class Observability:
         self,
         function: Callable[P, R],
     ) -> Callable[P, R]:
-        signature = inspect.signature(function)
+        signature = inspect.signature(
+            function
+        )
+
         module = function.__module__
         function_name = function.__name__
 
@@ -178,27 +201,31 @@ class Observability:
                     *args,
                     **kwargs,
                 )
+
                 bound.apply_defaults()
 
-                parameters = redact_parameters(
+                captured_parameters = redact_parameters(
                     dict(bound.arguments)
                 )
 
-                parameters = json_safe_dict(
-                    parameters
+                captured_parameters = json_safe_dict(
+                    captured_parameters
                 )
 
-                parameters = limit_parameters(
-                    parameters,
+                captured_parameters = limit_parameters(
+                    captured_parameters,
                     self.max_parameter_length,
                 )
 
             else:
-                parameters = {}
+                captured_parameters = {}
 
             parent_call_id = _current_call_id.get()
             call_id = str(uuid4())
-            token = _current_call_id.set(call_id)
+
+            token = _current_call_id.set(
+                call_id
+            )
 
             started_at = (
                 perf_counter()
@@ -206,59 +233,59 @@ class Observability:
                 else None
             )
 
-            self.logger.info(
-                f"{function_name} started",
-                call_id=call_id,
-                parent_call_id=parent_call_id,
-                parameters=parameters,
-                module=module,
-                function=function_name,
-                event=FUNCTION_START,
-            )
-
             try:
-                result = function(
-                    *args,
-                    **kwargs,
-                )
-
-            except Exception as exception:
-                self.logger.error(
-                    f"{function_name} failed",
-                    exception=exception,
-                    call_id=call_id,
-                    parent_call_id=parent_call_id,
-                    parameters=parameters,
-                    duration_ms=self._duration_ms(
-                        started_at
-                    ),
-                    module=module,
-                    function=function_name,
-                    event=FUNCTION_ERROR,
-                )
-
-                raise
-
-            else:
                 self.logger.info(
-                    f"{function_name} completed",
+                    f"{function_name} started",
                     call_id=call_id,
                     parent_call_id=parent_call_id,
-                    parameters=parameters,
-                    duration_ms=self._duration_ms(
-                        started_at
-                    ),
+                    parameters=captured_parameters,
                     module=module,
                     function=function_name,
-                    event=FUNCTION_END,
+                    event=FUNCTION_START,
                 )
 
-                return result
+                try:
+                    result = function(
+                        *args,
+                        **kwargs,
+                    )
+
+                except Exception as exception:
+                    self.logger.error(
+                        f"{function_name} failed",
+                        exception=exception,
+                        call_id=call_id,
+                        parent_call_id=parent_call_id,
+                        parameters=captured_parameters,
+                        duration_ms=self._duration_ms(
+                            started_at
+                        ),
+                        module=module,
+                        function=function_name,
+                        event=FUNCTION_ERROR,
+                    )
+
+                    raise
+
+                else:
+                    self.logger.info(
+                        f"{function_name} completed",
+                        call_id=call_id,
+                        parent_call_id=parent_call_id,
+                        parameters=captured_parameters,
+                        duration_ms=self._duration_ms(
+                            started_at
+                        ),
+                        module=module,
+                        function=function_name,
+                        event=FUNCTION_END,
+                    )
+
+                    return result
 
             finally:
-                _current_call_id.reset(token)
+                _current_call_id.reset(
+                    token
+                )
 
-        return cast(
-            Callable[P, R],
-            wrapper,
-        )
+        return wrapper

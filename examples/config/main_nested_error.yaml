@@ -2,8 +2,6 @@ monitaudit:
   application: monitaudit-example-nested-error
 
   global:
-    is_databricks: false
-
     logging:
       level: DEBUG
       timer: true
@@ -17,21 +15,17 @@ monitaudit:
 
       json_sink:
         enabled: true
-        path: logs/examples/main_nested_error.jsonl
+        path: output/json_sink/main_nested_error.jsonl
 
       file_sink:
         enabled: false
-        path: logs/examples/main_nested_error.log
+        path: output/file_sink/main_nested_error.log
 
       delta_sink:
         enabled: false
         table: main.logging.monitaudit_nested_error
 
-  dev:
-    is_databricks: false
-
-  acc:
-    is_databricks: false
-
-  prod:
-    is_databricks: false
+  environments:
+    dev: {}
+    acc: {}
+    prod: {}

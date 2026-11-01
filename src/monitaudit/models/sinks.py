@@ -1,10 +1,10 @@
+# src/monitaudit/models/sinks.py
+
 from __future__ import annotations
 
-from copy import deepcopy
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
-
 
 Environment = Literal[
     "dev",
@@ -25,18 +25,20 @@ SinkFailureMode = Literal[
     "raise",
 ]
 
+FileFormat = Literal[
+    "text",
+    "csv",
+]
+
+
 class ConfigModel(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-
-
-class LoggingSettings(ConfigModel):
     model_config = ConfigDict(
         extra="forbid",
         frozen=True,
     )
 
+
+class LoggingSettings(ConfigModel):
     level: LogLevel = "INFO"
     timer: bool = True
     parameters: bool = True
@@ -49,147 +51,60 @@ class LoggingSettings(ConfigModel):
 
     sink_failure_mode: SinkFailureMode = "continue"
 
+
 class ConsoleSinkSettings(ConfigModel):
     enabled: bool = True
 
-    parameters: list[str] = Field(
-        default_factory=list
-    )
+    parameters: tuple[str, ...] = ()
+
 
 class JsonSinkSettings(ConfigModel):
     enabled: bool = False
+
     path: str = Field(
-        default="logs/monitaudit.jsonl",
         min_length=1,
     )
 
 
 class DeltaSinkSettings(ConfigModel):
     enabled: bool = False
-    table: str = Field(
-        default="main.logging.monitaudit",
+
+    table: str | None = Field(
+        default=None,
         min_length=1,
     )
+    path: str | None = None
 
 
 class FileSinkSettings(ConfigModel):
     enabled: bool = False
+
+    format: FileFormat = "text"
+
+    delimiter: str = Field(
+        default=";",
+        min_length=1,
+        max_length=1,
+    )
+
     path: str = Field(
-        default="volume/metadata/state/logs/monitaudit.log",
         min_length=1,
     )
 
 
 class SinkSettings(ConfigModel):
-    console_sink: ConsoleSinkSettings = Field(
-        default_factory=ConsoleSinkSettings
-    )
+    console_sink: ConsoleSinkSettings
+    json_sink: JsonSinkSettings
+    delta_sink: DeltaSinkSettings
+    file_sink: FileSinkSettings
 
-    json_sink: JsonSinkSettings = Field(
-        default_factory=JsonSinkSettings
-    )
-
-    delta_sink: DeltaSinkSettings = Field(
-        default_factory=DeltaSinkSettings
-    )
-
-    file_sink: FileSinkSettings = Field(
-        default_factory=FileSinkSettings
-    )
-
-
-class EnvironmentSettings(ConfigModel):
-    is_databricks: bool = False
-
-    logging: LoggingSettings = Field(
-        default_factory=LoggingSettings
-    )
-
-    sinks: SinkSettings = Field(
-        default_factory=SinkSettings
-    )
-
-
-class EnvironmentOverride(ConfigModel):
-    is_databricks: bool | None = None
-
-    logging: dict[str, object] | None = None
-
-    sinks: dict[str, object] | None = None
-
-
-class monitauditSettings(ConfigModel):
-    model_config = ConfigDict(
-        extra="forbid",
-        populate_by_name=True,
-    )
-
+class monitauditConfig(ConfigModel):
     application: str = Field(
         min_length=1,
     )
 
-    global_settings: EnvironmentSettings = Field(
-        alias="global"
-    )
+    environment: Environment
 
-    dev: EnvironmentOverride = Field(
-        default_factory=EnvironmentOverride
-    )
+    logging: LoggingSettings
 
-    acc: EnvironmentOverride = Field(
-        default_factory=EnvironmentOverride
-    )
-
-    prod: EnvironmentOverride = Field(
-        default_factory=EnvironmentOverride
-    )
-
-    def for_environment(
-        self,
-        environment: Environment,
-    ) -> EnvironmentSettings:
-        merged_data = deepcopy(
-            self.global_settings.model_dump()
-        )
-
-        override = getattr(
-            self,
-            environment,
-        )
-
-        override_data = override.model_dump(
-            exclude_none=True,
-            exclude_unset=True,
-        )
-
-        _deep_merge(
-            merged_data,
-            override_data,
-        )
-
-        return EnvironmentSettings.model_validate(
-            merged_data
-        )
-
-
-class monitauditConfig(ConfigModel):
-    monitaudit: monitauditSettings
-
-
-def _deep_merge(
-    target: dict[str, object],
-    override: dict[str, object],
-) -> None:
-    for key, value in override.items():
-        current_value = target.get(key)
-
-        if (
-            isinstance(current_value, dict)
-            and isinstance(value, dict)
-        ):
-            _deep_merge(
-                current_value,
-                value,
-            )
-        else:
-            target[key] = value
+    sinks: SinkSettings
