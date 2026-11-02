@@ -9,6 +9,16 @@ MonitAudit follows Semantic Versioning:
 - **PATCH** – backwards-compatible fixes, improvements and maintenance
 
 ---
+## 1.4.0 - ????-??-??
+
+MTA-00001 – MTA-00099    General / validation
+MTA-00100 – MTA-00199    Logger
+MTA-00200 – MTA-00299    Sinks
+MTA-00300 – MTA-00399    Tracing
+MTA-00400 – MTA-00499    Configuration/loading
+MTA-00500 – MTA-00599    Spark / Delta
+MTA-00900 – MTA-00999    Internal consistency
+
 ## 1.3.0 - 2026-11-02
 
 ### Changed

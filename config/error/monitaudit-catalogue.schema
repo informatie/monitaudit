@@ -1,0 +1,159 @@
+# config/monitaudit/error-catalogue.schema.yaml
+
+$schema: "https://json-schema.org/draft/2020-12/schema"
+$id: "monitaudit-error-catalogue"
+title: "MonitAudit Error Catalogue"
+description: "Schema for the MonitAudit machine-readable error catalogue."
+type: object
+additionalProperties: false
+
+required:
+  - catalogue
+  - errors
+
+properties:
+
+  catalogue:
+    type: object
+    additionalProperties: false
+
+    required:
+      - name
+      - version
+      - code_prefix
+      - code_pattern
+
+    properties:
+
+      name:
+        type: string
+        const: "MonitAudit"
+
+      version:
+        type: string
+        pattern: '^\d+\.\d+\.\d+$'
+
+      code_prefix:
+        type: string
+        const: "MTA"
+
+      code_pattern:
+        type: string
+        const: '^MTA-\d{5}$'
+
+  errors:
+    type: object
+    minProperties: 1
+
+    propertyNames:
+      pattern: '^MTA-\d{5}$'
+
+    additionalProperties:
+      $ref: "#/$defs/error"
+
+
+$defs:
+
+  error:
+    type: object
+    additionalProperties: false
+
+    required:
+      - title
+      - category
+      - severity
+      - description
+      - solution
+      - status
+
+    properties:
+
+      title:
+        type: string
+        minLength: 1
+
+      category:
+        type: string
+        enum:
+          - general
+          - logger
+          - model
+          - tracing
+          - configuration
+          - sink
+          - console_sink
+          - file_sink
+          - json_sink
+          - delta_sink
+          - serialization
+          - security
+          - runtime
+          - internal
+          - io
+
+      severity:
+        type: string
+        enum:
+          - debug
+          - info
+          - warning
+          - error
+          - critical
+
+      description:
+        type: string
+        minLength: 1
+
+      solution:
+        type: string
+        minLength: 1
+
+      status:
+        type: string
+        enum:
+          - active
+          - deprecated
+          - reserved
+
+      exception:
+        type:
+          - string
+          - "null"
+
+      retryable:
+        type: boolean
+
+      documentation:
+        type:
+          - string
+          - "null"
+
+      introduced:
+        type: string
+        pattern: '^\d+\.\d+\.\d+$'
+
+      deprecated:
+        type:
+          - string
+          - "null"
+        pattern: '^\d+\.\d+\.\d+$'
+
+      replaced_by:
+        anyOf:
+          - type: "null"
+          - type: string
+            pattern: '^MTA-\d{5}$'
+
+      context:
+        type: array
+        uniqueItems: true
+        items:
+          type: string
+          minLength: 1
+
+      tags:
+        type: array
+        uniqueItems: true
+        items:
+          type: string
+          minLength: 1

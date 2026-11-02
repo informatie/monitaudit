@@ -1,0 +1,2361 @@
+# config/error/monitaudit.errors
+#
+# MonitAudit machine-readable error catalogue
+# Version: 1.4.0
+#
+# IMPORTANT:
+# - Error codes are permanent once published.
+# - Published codes must never be reused for another condition.
+# - Runtime values must not be stored in this catalogue.
+# - Runtime context is supplied when an error occurs.
+# - The mapping key is the authoritative error code.
+# - The most specific applicable error code must be used.
+# - Generic sink and I/O codes are fallback codes.
+# - Application exceptions observed by tracing are not MTA errors.
+
+catalogue:
+  name: MonitAudit
+  version: 1.4.0
+  code_prefix: MTA
+  code_pattern: '^MTA-\d{5}$'
+  resolution_policy: most_specific
+
+  severity_policy:
+    debug: Diagnostic condition with no operational impact.
+    info: Informational condition requiring no corrective action.
+    warning: Degraded behaviour while the operation can continue.
+    error: An operation failed but MonitAudit may continue.
+    critical: MonitAudit integrity or continued operation is at risk.
+
+  ranges:
+    general:
+      start: MTA-00001
+      end: MTA-00099
+
+    logger:
+      start: MTA-00100
+      end: MTA-00199
+
+    model:
+      start: MTA-00200
+      end: MTA-00299
+
+    tracing:
+      start: MTA-00300
+      end: MTA-00399
+
+    configuration:
+      start: MTA-00400
+      end: MTA-00499
+
+    sink:
+      start: MTA-00500
+      end: MTA-00599
+
+    console_sink:
+      start: MTA-00600
+      end: MTA-00699
+
+    file_sink:
+      start: MTA-00700
+      end: MTA-00799
+
+    json_sink:
+      start: MTA-00800
+      end: MTA-00899
+
+    delta_sink:
+      start: MTA-00900
+      end: MTA-00999
+
+    serialization:
+      start: MTA-01000
+      end: MTA-01099
+
+    security:
+      start: MTA-01100
+      end: MTA-01199
+
+    runtime:
+      start: MTA-01200
+      end: MTA-01299
+
+    internal:
+      start: MTA-01300
+      end: MTA-01399
+
+    io:
+      start: MTA-01400
+      end: MTA-01499
+
+    error_catalogue:
+      start: MTA-01500
+      end: MTA-01599
+
+    unexpected:
+      start: MTA-09900
+      end: MTA-09999
+
+
+errors:
+
+  # =========================================================================
+  # GENERAL VALIDATION
+  # MTA-00001 - MTA-00099
+  # =========================================================================
+
+  MTA-00001:
+    title: Invalid parameter
+    category: general
+    severity: error
+    description: A parameter contains an invalid value.
+    solution: Verify the parameter value and the calling procedure.
+    exception: builtins.ValueError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - parameter
+      - value
+    tags:
+      - validation
+      - parameter
+
+  MTA-00002:
+    title: Missing required parameter
+    category: general
+    severity: error
+    description: A required parameter was not supplied.
+    solution: Supply the required parameter and retry the operation.
+    exception: builtins.ValueError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - parameter
+    tags:
+      - validation
+      - parameter
+
+  MTA-00003:
+    title: Invalid parameter type
+    category: general
+    severity: error
+    description: A parameter has an unsupported type.
+    solution: Verify the expected parameter type and supplied value.
+    exception: builtins.TypeError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - parameter
+      - expected_type
+      - actual_type
+    tags:
+      - validation
+      - parameter
+      - type
+
+  MTA-00004:
+    title: Empty required value
+    category: general
+    severity: error
+    description: A required value is empty.
+    solution: Supply a non-empty value.
+    exception: builtins.ValueError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - parameter
+    tags:
+      - validation
+
+  MTA-00005:
+    title: Value outside allowed range
+    category: general
+    severity: error
+    description: A numeric value is outside its permitted range.
+    solution: Verify the configured minimum and maximum values.
+    exception: builtins.ValueError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - parameter
+      - value
+      - minimum
+      - maximum
+    tags:
+      - validation
+      - range
+
+
+  # =========================================================================
+  # LOGGER
+  # MTA-00100 - MTA-00199
+  # =========================================================================
+
+  MTA-00100:
+    title: Logger initialisation failed
+    category: logger
+    severity: error
+    description: The MonitAudit logger could not be initialised.
+    solution: Verify the logging context, configured sinks and logger settings.
+    exception: builtins.RuntimeError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context: []
+    tags:
+      - logger
+
+  MTA-00101:
+    title: Invalid logging context
+    category: logger
+    severity: error
+    description: The logger received an invalid LogContext.
+    solution: Supply a valid LogContext instance.
+    exception: builtins.TypeError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - actual_type
+    tags:
+      - logger
+      - context
+      - validation
+
+  MTA-00102:
+    title: Invalid sink
+    category: logger
+    severity: error
+    description: A configured sink does not implement the Sink contract.
+    solution: Verify that every configured sink inherits from Sink.
+    exception: builtins.TypeError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - sink
+      - actual_type
+    tags:
+      - logger
+      - sink
+      - validation
+
+  MTA-00103:
+    title: Invalid sink failure mode
+    category: logger
+    severity: error
+    description: The configured sink failure mode is unsupported.
+    solution: Use continue or raise.
+    exception: builtins.ValueError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - sink_failure_mode
+    tags:
+      - logger
+      - sink
+      - validation
+
+  MTA-00104:
+    title: Logger sink failure
+    category: logger
+    severity: error
+    description: One or more sinks failed while processing a log record.
+    solution: Inspect the specific sink failure codes and affected destinations.
+    exception: builtins.RuntimeError
+    retryable: true
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - sinks
+    tags:
+      - logger
+      - sink
+
+  MTA-00105:
+    title: Caller information unavailable
+    category: logger
+    severity: warning
+    description: MonitAudit could not determine the originating module or function.
+    solution: Supply module and function explicitly when caller information is required.
+    exception: null
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context: []
+    tags:
+      - logger
+      - caller
+      - diagnostic
+
+
+  # =========================================================================
+  # LOG MODELS AND CONTEXT
+  # MTA-00200 - MTA-00299
+  # =========================================================================
+
+  MTA-00200:
+    title: Invalid log record
+    category: model
+    severity: error
+    description: A MonitAudit log record failed model validation.
+    solution: Verify the supplied log fields and their values.
+    exception: pydantic.ValidationError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context: []
+    tags:
+      - model
+      - validation
+
+  MTA-00201:
+    title: Invalid log level
+    category: model
+    severity: error
+    description: A log model received an unsupported logging level.
+    solution: Use DEBUG, INFO, WARNING, ERROR or CRITICAL as appropriate for the model.
+    exception: pydantic.ValidationError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - level
+    tags:
+      - model
+      - validation
+      - level
+
+  MTA-00202:
+    title: Invalid log message
+    category: model
+    severity: error
+    description: The log message is invalid or empty.
+    solution: Supply a non-empty log message.
+    exception: pydantic.ValidationError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context: []
+    tags:
+      - model
+      - message
+      - validation
+
+  MTA-00203:
+    title: Invalid duration
+    category: model
+    severity: error
+    description: The log duration is outside the supported range.
+    solution: Supply duration_ms as zero or greater.
+    exception: pydantic.ValidationError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - duration_ms
+    tags:
+      - model
+      - duration
+      - validation
+
+  MTA-00204:
+    title: Invalid LogContext application
+    category: model
+    severity: error
+    description: A LogContext was constructed with an invalid application name.
+    solution: Supply a non-empty application name.
+    exception: pydantic.ValidationError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - application
+    tags:
+      - model
+      - context
+      - application
+
+  MTA-00205:
+    title: Invalid LogContext environment
+    category: model
+    severity: error
+    description: A LogContext was constructed with an invalid environment value.
+    solution: Supply a valid environment value.
+    exception: pydantic.ValidationError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - environment
+    tags:
+      - model
+      - context
+      - environment
+
+  MTA-00206:
+    title: Invalid correlation identifier
+    category: model
+    severity: error
+    description: The correlation identifier is invalid.
+    solution: Verify the supplied correlation identifier.
+    exception: pydantic.ValidationError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - correlation_id
+    tags:
+      - model
+      - correlation
+
+  MTA-00207:
+    title: Invalid traceback
+    category: model
+    severity: error
+    description: Traceback information cannot be represented by the target log model.
+    solution: Supply traceback information as the supported sequence of strings.
+    exception: pydantic.ValidationError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context: []
+    tags:
+      - model
+      - traceback
+
+
+  # =========================================================================
+  # TRACING AND PARAMETERS
+  # MTA-00300 - MTA-00399
+  # =========================================================================
+
+  MTA-00300:
+    title: Trace initialisation failed
+    category: tracing
+    severity: error
+    description: MonitAudit could not initialise tracing for a function.
+    solution: Verify the traced callable and tracing configuration.
+    exception: builtins.RuntimeError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - function
+    tags:
+      - tracing
+
+  MTA-00301:
+    title: Trace parameter binding failed
+    category: tracing
+    severity: error
+    description: Function arguments could not be bound to the traced function signature.
+    solution: Verify the supplied arguments and function signature.
+    exception: builtins.TypeError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - function
+    tags:
+      - tracing
+      - parameters
+
+  MTA-00302:
+    title: Parameter capture failed
+    category: tracing
+    severity: error
+    description: MonitAudit could not capture parameters for a traced function.
+    solution: Verify the arguments supplied to the traced function.
+    exception: builtins.RuntimeError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - function
+    tags:
+      - tracing
+      - parameters
+
+  MTA-00303:
+    title: Trace parameter redaction failed
+    category: tracing
+    severity: error
+    description: Captured trace parameters could not be redacted.
+    solution: Verify the captured parameter structure and nested values.
+    exception: builtins.RuntimeError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - function
+    tags:
+      - tracing
+      - security
+      - redaction
+
+  MTA-00304:
+    title: Trace parameter serialisation failed
+    category: tracing
+    severity: error
+    description: Captured trace parameters could not be converted to JSON-safe values.
+    solution: Verify parameter types and custom objects.
+    exception: builtins.RuntimeError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - function
+    tags:
+      - tracing
+      - serialization
+
+  MTA-00305:
+    title: Parameter size limiting failed
+    category: tracing
+    severity: error
+    description: Captured parameters could not be limited to the configured size.
+    solution: Verify max_parameter_length and the captured parameter structure.
+    exception: builtins.RuntimeError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - max_parameter_length
+    tags:
+      - tracing
+      - parameters
+
+  MTA-00306:
+    title: Reserved
+    category: tracing
+    severity: error
+    description: Reserved for a future MonitAudit tracing failure.
+    solution: No corrective action is defined for this reserved code.
+    exception: null
+    retryable: false
+    status: reserved
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context: []
+    tags:
+      - reserved
+      - tracing
+
+  MTA-00307:
+    title: Trace context restoration failed
+    category: tracing
+    severity: critical
+    description: MonitAudit could not restore the active trace context.
+    solution: Inspect nested tracing and ContextVar handling.
+    exception: builtins.RuntimeError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - call_id
+    tags:
+      - tracing
+      - context
+      - internal
+
+  MTA-00308:
+    title: Invalid trace hierarchy
+    category: tracing
+    severity: error
+    description: A trace call relationship is invalid.
+    solution: Verify call_id and parent_call_id relationships.
+    exception: builtins.ValueError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - call_id
+      - parent_call_id
+    tags:
+      - tracing
+      - hierarchy
+
+
+  # =========================================================================
+  # CONFIGURATION
+  # MTA-00400 - MTA-00499
+  # =========================================================================
+
+  MTA-00400:
+    title: Configuration loading failed
+    category: configuration
+    severity: error
+    description: MonitAudit configuration could not be loaded.
+    solution: Verify the configuration sources and runtime environment.
+    exception: monitaudit.utilities.load_config.ConfigurationError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context: []
+    tags:
+      - configuration
+
+  MTA-00401:
+    title: Properties file not found
+    category: configuration
+    severity: error
+    description: The MonitAudit properties file does not exist.
+    solution: Verify the configured properties file path.
+    exception: builtins.FileNotFoundError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - path
+    tags:
+      - configuration
+      - properties
+      - file
+
+  MTA-00402:
+    title: Properties path is not a file
+    category: configuration
+    severity: error
+    description: The configured properties path does not reference a file.
+    solution: Configure a valid properties file path.
+    exception: monitaudit.utilities.load_config.ConfigurationError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - path
+    tags:
+      - configuration
+      - properties
+      - file
+
+  MTA-00403:
+    title: Properties file unreadable
+    category: configuration
+    severity: error
+    description: The MonitAudit properties file could not be read.
+    solution: Verify the file path and filesystem permissions.
+    exception: monitaudit.utilities.load_config.ConfigurationError
+    retryable: true
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - path
+    tags:
+      - configuration
+      - properties
+      - io
+
+  MTA-00404:
+    title: Invalid property
+    category: configuration
+    severity: error
+    description: A properties-file entry has invalid syntax.
+    solution: Use key=value syntax.
+    exception: monitaudit.utilities.load_config.ConfigurationError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - path
+      - line
+    tags:
+      - configuration
+      - properties
+
+  MTA-00405:
+    title: Empty property name
+    category: configuration
+    severity: error
+    description: A properties-file entry contains an empty property name.
+    solution: Supply a valid property name before the equals sign.
+    exception: monitaudit.utilities.load_config.ConfigurationError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - path
+      - line
+    tags:
+      - configuration
+      - properties
+
+  MTA-00406:
+    title: Duplicate property
+    category: configuration
+    severity: error
+    description: The same property is defined more than once.
+    solution: Remove the duplicate property definition.
+    exception: monitaudit.utilities.load_config.ConfigurationError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - property
+      - path
+      - line
+    tags:
+      - configuration
+      - properties
+
+  MTA-00407:
+    title: Property namespace conflict
+    category: configuration
+    severity: error
+    description: A dotted property conflicts with an existing scalar value or namespace.
+    solution: Correct the dotted property hierarchy.
+    exception: monitaudit.utilities.load_config.ConfigurationError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - property
+      - path
+      - line
+    tags:
+      - configuration
+      - properties
+
+  MTA-00408:
+    title: Runtime configuration not found
+    category: configuration
+    severity: error
+    description: No supported MonitAudit runtime configuration file was found.
+    solution: Create a supported runtime file or supply its path explicitly.
+    exception: builtins.FileNotFoundError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - path
+    tags:
+      - configuration
+      - runtime
+
+  MTA-00409:
+    title: Multiple runtime configuration files
+    category: configuration
+    severity: error
+    description: Multiple supported runtime configuration files were discovered.
+    solution: Keep only one automatically discoverable runtime configuration file.
+    exception: monitaudit.utilities.load_config.ConfigurationError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - paths
+    tags:
+      - configuration
+      - runtime
+
+  MTA-00410:
+    title: Runtime configuration unreadable
+    category: configuration
+    severity: error
+    description: The runtime configuration file could not be read.
+    solution: Verify the runtime path and filesystem permissions.
+    exception: monitaudit.utilities.load_config.ConfigurationError
+    retryable: true
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - path
+    tags:
+      - configuration
+      - runtime
+      - io
+
+  MTA-00411:
+    title: Empty runtime configuration
+    category: configuration
+    severity: error
+    description: The runtime configuration file contains no configuration.
+    solution: Add the required MonitAudit runtime configuration.
+    exception: monitaudit.utilities.load_config.ConfigurationError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - path
+    tags:
+      - configuration
+      - runtime
+
+  MTA-00412:
+    title: Invalid runtime YAML
+    category: configuration
+    severity: error
+    description: The runtime configuration is not valid YAML.
+    solution: Correct the YAML syntax.
+    exception: monitaudit.utilities.load_config.ConfigurationError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - path
+    tags:
+      - configuration
+      - runtime
+      - yaml
+
+  MTA-00413:
+    title: Invalid runtime root
+    category: configuration
+    severity: error
+    description: The runtime configuration root is not a YAML mapping.
+    solution: Define the runtime configuration as a mapping.
+    exception: monitaudit.utilities.load_config.ConfigurationError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - path
+    tags:
+      - configuration
+      - yaml
+
+  MTA-00414:
+    title: Invalid configuration key
+    category: configuration
+    severity: error
+    description: A YAML configuration mapping contains a non-string key.
+    solution: Use string keys for all MonitAudit configuration mappings.
+    exception: monitaudit.utilities.load_config.ConfigurationError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - location
+      - key
+    tags:
+      - configuration
+      - yaml
+
+  MTA-00415:
+    title: Missing MonitAudit section
+    category: configuration
+    severity: error
+    description: The runtime configuration does not contain a valid monitaudit mapping.
+    solution: Add the monitaudit root configuration mapping.
+    exception: monitaudit.utilities.load_config.ConfigurationError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context: []
+    tags:
+      - configuration
+
+  MTA-00416:
+    title: Invalid configured application
+    category: configuration
+    severity: error
+    description: monitaudit.application is missing, empty or otherwise invalid.
+    solution: Configure monitaudit.application with a non-empty string.
+    exception: monitaudit.utilities.load_config.ConfigurationError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - application
+    tags:
+      - configuration
+      - application
+
+  MTA-00417:
+    title: Missing environments section
+    category: configuration
+    severity: error
+    description: The runtime configuration does not contain a valid monitaudit.environments mapping.
+    solution: Configure monitaudit.environments.
+    exception: monitaudit.utilities.load_config.ConfigurationError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context: []
+    tags:
+      - configuration
+      - environment
+
+  MTA-00418:
+    title: Invalid configured environment name
+    category: configuration
+    severity: error
+    description: An environment key under monitaudit.environments has an invalid name.
+    solution: Use lowercase letters, numbers, underscores or hyphens and start with a letter.
+    exception: monitaudit.utilities.load_config.ConfigurationError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - environment
+    tags:
+      - configuration
+      - environment
+
+  MTA-00419:
+    title: Environment configuration missing
+    category: configuration
+    severity: error
+    description: No configuration exists under monitaudit.environments for the active environment.
+    solution: Add the active environment to monitaudit.environments.
+    exception: monitaudit.utilities.load_config.ConfigurationError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - environment
+    tags:
+      - configuration
+      - environment
+
+  MTA-00420:
+    title: Environment configuration is not a mapping
+    category: configuration
+    severity: error
+    description: The selected environment configuration has an invalid structure.
+    solution: Define the environment configuration as a YAML mapping.
+    exception: monitaudit.utilities.load_config.ConfigurationError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - environment
+    tags:
+      - configuration
+      - environment
+
+  MTA-00421:
+    title: Effective configuration invalid
+    category: configuration
+    severity: error
+    description: The merged MonitAudit configuration failed model validation.
+    solution: Verify properties, global overrides and environment-specific overrides.
+    exception: monitaudit.utilities.load_config.ConfigurationError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - application
+      - environment
+    tags:
+      - configuration
+      - validation
+
+  MTA-00422:
+    title: Sink configuration incomplete
+    category: configuration
+    severity: error
+    description: An enabled sink does not have all required configuration values.
+    solution: Complete the required configuration for the enabled sink.
+    exception: builtins.ValueError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - sink
+      - missing_fields
+    tags:
+      - configuration
+      - sink
+
+  MTA-00423:
+    title: Sink construction failed
+    category: configuration
+    severity: error
+    description: A sink could not be constructed from the effective configuration.
+    solution: Verify the effective sink configuration and required runtime dependencies.
+    exception: builtins.RuntimeError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - sink
+    tags:
+      - configuration
+      - sink
+
+
+  # =========================================================================
+  # SINK FRAMEWORK
+  # MTA-00500 - MTA-00599
+  #
+  # These are fallback codes for custom or unclassified sinks.
+  # Built-in sinks should use their specific MTA-006xx - MTA-009xx codes.
+  # =========================================================================
+
+  MTA-00500:
+    title: Unclassified sink initialisation failed
+    category: sink
+    severity: error
+    description: A custom or unclassified sink could not be initialised.
+    solution: Verify the sink implementation and configuration.
+    exception: builtins.RuntimeError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - sink
+    tags:
+      - sink
+      - fallback
+
+  MTA-00501:
+    title: Unclassified sink write failed
+    category: sink
+    severity: error
+    description: A custom or unclassified sink failed while writing a log record.
+    solution: Inspect the sink implementation and destination.
+    exception: builtins.RuntimeError
+    retryable: true
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - sink
+    tags:
+      - sink
+      - fallback
+
+  MTA-00502:
+    title: Multiple sink writes failed
+    category: sink
+    severity: error
+    description: Multiple sinks failed during the same log-record fan-out operation.
+    solution: Inspect every reported sink-specific failure.
+    exception: builtins.RuntimeError
+    retryable: true
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - sinks
+    tags:
+      - sink
+      - fanout
+
+  MTA-00503:
+    title: Sink failure reporting failed
+    category: sink
+    severity: warning
+    description: MonitAudit could not report a sink failure to its diagnostic output.
+    solution: Inspect stderr handling and the original sink failure.
+    exception: null
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - sink
+    tags:
+      - sink
+      - diagnostic
+
+
+  # =========================================================================
+  # CONSOLE SINK
+  # MTA-00600 - MTA-00699
+  # =========================================================================
+
+  MTA-00600:
+    title: Console sink initialisation failed
+    category: console_sink
+    severity: error
+    description: ConsoleSink could not be initialised.
+    solution: Verify the ConsoleSink configuration.
+    exception: builtins.ValueError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context: []
+    tags:
+      - sink
+      - console
+
+  MTA-00601:
+    title: Invalid console indentation
+    category: console_sink
+    severity: error
+    description: ConsoleSink indent_size is invalid.
+    solution: Configure indent_size as zero or greater.
+    exception: builtins.ValueError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - indent_size
+    tags:
+      - sink
+      - console
+      - validation
+
+  MTA-00602:
+    title: Invalid console location width
+    category: console_sink
+    severity: error
+    description: ConsoleSink location_width is invalid.
+    solution: Configure location_width as zero or greater.
+    exception: builtins.ValueError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - location_width
+    tags:
+      - sink
+      - console
+      - validation
+
+  MTA-00603:
+    title: Console parameter formatting failed
+    category: console_sink
+    severity: error
+    description: Selected parameters could not be formatted for console output.
+    solution: Verify the selected parameter values.
+    exception: builtins.RuntimeError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - parameters
+    tags:
+      - sink
+      - console
+      - parameters
+
+
+  # =========================================================================
+  # FILE SINK
+  # MTA-00700 - MTA-00799
+  # =========================================================================
+
+  MTA-00700:
+    title: File sink initialisation failed
+    category: file_sink
+    severity: error
+    description: FileSink could not be initialised.
+    solution: Verify the FileSink configuration.
+    exception: builtins.ValueError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context: []
+    tags:
+      - sink
+      - file
+
+  MTA-00701:
+    title: Invalid file path
+    category: file_sink
+    severity: error
+    description: The configured FileSink output path is invalid.
+    solution: Configure a valid writable output path.
+    exception: builtins.ValueError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - path
+    tags:
+      - sink
+      - file
+      - validation
+
+  MTA-00702:
+    title: Invalid file format
+    category: file_sink
+    severity: error
+    description: The configured FileSink format is unsupported.
+    solution: Use a FileSink format supported by the installed MonitAudit version.
+    exception: builtins.ValueError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - format
+    tags:
+      - sink
+      - file
+      - validation
+
+  MTA-00703:
+    title: Invalid CSV delimiter
+    category: file_sink
+    severity: error
+    description: The configured CSV delimiter is invalid.
+    solution: Configure a valid single-character delimiter.
+    exception: builtins.ValueError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - delimiter
+    tags:
+      - sink
+      - file
+      - csv
+
+  MTA-00704:
+    title: File creation failed
+    category: file_sink
+    severity: error
+    description: FileSink could not create its output destination.
+    solution: Verify the output path and filesystem permissions.
+    exception: builtins.OSError
+    retryable: true
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - path
+    tags:
+      - sink
+      - file
+      - io
+
+  MTA-00705:
+    title: File write failed
+    category: file_sink
+    severity: error
+    description: FileSink could not write a log record.
+    solution: Verify the destination, permissions and available storage.
+    exception: builtins.OSError
+    retryable: true
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - path
+    tags:
+      - sink
+      - file
+      - io
+
+  MTA-00706:
+    title: File lock failed
+    category: file_sink
+    severity: error
+    description: FileSink could not obtain the required file lock.
+    solution: Check concurrent writers and filesystem locking.
+    exception: builtins.RuntimeError
+    retryable: true
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - path
+    tags:
+      - sink
+      - file
+      - locking
+
+  MTA-00707:
+    title: File lock timeout
+    category: file_sink
+    severity: error
+    description: FileSink timed out while waiting for a file lock.
+    solution: Identify the process holding the file lock and retry the operation.
+    exception: builtins.TimeoutError
+    retryable: true
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - path
+    tags:
+      - sink
+      - file
+      - locking
+
+
+  # =========================================================================
+  # JSON SINK
+  # MTA-00800 - MTA-00899
+  # =========================================================================
+
+  MTA-00800:
+    title: JSON sink initialisation failed
+    category: json_sink
+    severity: error
+    description: JsonSink could not be initialised.
+    solution: Verify the JsonSink configuration.
+    exception: builtins.ValueError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context: []
+    tags:
+      - sink
+      - json
+
+  MTA-00801:
+    title: Invalid JSON output path
+    category: json_sink
+    severity: error
+    description: The configured JsonSink output path is invalid.
+    solution: Configure a valid writable JSON output path.
+    exception: builtins.ValueError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - path
+    tags:
+      - sink
+      - json
+      - validation
+
+  MTA-00802:
+    title: JSON serialisation failed
+    category: json_sink
+    severity: error
+    description: A log record could not be converted to JSON.
+    solution: Inspect parameters and attributes for unsupported values.
+    exception: builtins.TypeError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context: []
+    tags:
+      - sink
+      - json
+      - serialization
+
+  MTA-00803:
+    title: JSON write failed
+    category: json_sink
+    severity: error
+    description: JsonSink could not write the serialised log record.
+    solution: Verify the destination path, permissions and available storage.
+    exception: builtins.OSError
+    retryable: true
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - path
+    tags:
+      - sink
+      - json
+      - io
+
+
+  # =========================================================================
+  # DELTA / SPARK
+  # MTA-00900 - MTA-00999
+  # =========================================================================
+
+  MTA-00900:
+    title: Delta sink initialisation failed
+    category: delta_sink
+    severity: error
+    description: DeltaSink could not be initialised.
+    solution: Verify the DeltaSink and Spark configuration.
+    exception: builtins.RuntimeError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context: []
+    tags:
+      - sink
+      - delta
+      - spark
+
+  MTA-00901:
+    title: Invalid Delta table name
+    category: delta_sink
+    severity: error
+    description: The configured Delta table name is invalid.
+    solution: Verify the configured table identifier.
+    exception: builtins.ValueError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - table
+    tags:
+      - sink
+      - delta
+      - validation
+
+  MTA-00902:
+    title: Missing Delta table
+    category: delta_sink
+    severity: error
+    description: DeltaSink is enabled without a configured table.
+    solution: Configure the Delta table name.
+    exception: builtins.ValueError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context: []
+    tags:
+      - sink
+      - delta
+      - configuration
+
+  MTA-00903:
+    title: Missing Delta path
+    category: delta_sink
+    severity: error
+    description: DeltaSink requires a path but none is configured.
+    solution: Configure the required Delta destination path.
+    exception: builtins.ValueError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - table
+    tags:
+      - sink
+      - delta
+      - configuration
+
+  MTA-00904:
+    title: Local Delta path unavailable
+    category: delta_sink
+    severity: error
+    description: A local Delta operation was requested without an available path.
+    solution: Verify local DeltaSink configuration.
+    exception: builtins.RuntimeError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - table
+    tags:
+      - sink
+      - delta
+      - local
+
+  MTA-00905:
+    title: Spark session unavailable
+    category: delta_sink
+    severity: error
+    description: MonitAudit could not obtain the required Spark session.
+    solution: Verify the Spark runtime and session configuration.
+    exception: builtins.RuntimeError
+    retryable: true
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context: []
+    tags:
+      - sink
+      - delta
+      - spark
+
+  MTA-00906:
+    title: Databricks runtime unavailable
+    category: delta_sink
+    severity: error
+    description: MonitAudit could not obtain the required Databricks runtime.
+    solution: Verify the Databricks execution environment.
+    exception: builtins.RuntimeError
+    retryable: true
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context: []
+    tags:
+      - sink
+      - delta
+      - databricks
+
+  MTA-00907:
+    title: Delta catalogue creation failed
+    category: delta_sink
+    severity: error
+    description: The required Delta catalogue could not be created or accessed.
+    solution: Verify the catalogue identifier and Spark permissions.
+    exception: builtins.RuntimeError
+    retryable: true
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - catalogue
+    tags:
+      - sink
+      - delta
+      - spark
+
+  MTA-00908:
+    title: Delta schema creation failed
+    category: delta_sink
+    severity: error
+    description: The required Delta schema could not be created or accessed.
+    solution: Verify the schema identifier and Spark permissions.
+    exception: builtins.RuntimeError
+    retryable: true
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - catalogue
+      - schema
+    tags:
+      - sink
+      - delta
+      - spark
+
+  MTA-00909:
+    title: Delta table creation failed
+    category: delta_sink
+    severity: error
+    description: The Delta table could not be created.
+    solution: Verify the table, path, schema and Spark permissions.
+    exception: builtins.RuntimeError
+    retryable: true
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - table
+      - path
+    tags:
+      - sink
+      - delta
+      - spark
+
+  MTA-00910:
+    title: Delta write failed
+    category: delta_sink
+    severity: error
+    description: A log record could not be written to the Delta destination.
+    solution: Verify the Delta table, path, schema and Spark session.
+    exception: builtins.RuntimeError
+    retryable: true
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - table
+      - path
+    tags:
+      - sink
+      - delta
+      - spark
+
+
+  # =========================================================================
+  # SERIALISATION
+  # MTA-01000 - MTA-01099
+  # =========================================================================
+
+  MTA-01000:
+    title: Value serialisation failed
+    category: serialization
+    severity: error
+    description: A value could not be converted to a serialisable representation.
+    solution: Verify the value and its custom serialisation behaviour.
+    exception: builtins.TypeError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - actual_type
+    tags:
+      - serialization
+
+  MTA-01001:
+    title: Parameter serialisation failed
+    category: serialization
+    severity: error
+    description: Log parameters could not be converted to JSON-safe values.
+    solution: Inspect parameter values for unsupported objects.
+    exception: builtins.TypeError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context: []
+    tags:
+      - serialization
+      - parameters
+
+  MTA-01002:
+    title: Attribute serialisation failed
+    category: serialization
+    severity: error
+    description: Log attributes could not be converted to JSON-safe values.
+    solution: Inspect attribute values for unsupported objects.
+    exception: builtins.TypeError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context: []
+    tags:
+      - serialization
+      - attributes
+
+  MTA-01003:
+    title: Traceback serialisation failed
+    category: serialization
+    severity: error
+    description: Exception traceback data could not be serialised.
+    solution: Inspect the original exception and traceback.
+    exception: builtins.RuntimeError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - error_type
+    tags:
+      - serialization
+      - traceback
+
+
+  # =========================================================================
+  # REDACTION / SECURITY
+  # MTA-01100 - MTA-01199
+  # =========================================================================
+
+  MTA-01100:
+    title: Redaction failed
+    category: security
+    severity: error
+    description: Sensitive parameter redaction could not be completed.
+    solution: Inspect the supplied parameter structure.
+    exception: builtins.RuntimeError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context: []
+    tags:
+      - security
+      - redaction
+
+  MTA-01101:
+    title: Sensitive value processing failed
+    category: security
+    severity: error
+    description: A sensitive value could not be processed safely.
+    solution: Inspect nested parameter values and custom objects.
+    exception: builtins.RuntimeError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - actual_type
+    tags:
+      - security
+      - redaction
+
+  MTA-01102:
+    title: Sensitive parameter definition invalid
+    category: security
+    severity: error
+    description: A sensitive parameter definition is invalid.
+    solution: Verify configured sensitive parameter names.
+    exception: builtins.ValueError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - parameter
+    tags:
+      - security
+      - redaction
+      - configuration
+
+
+  # =========================================================================
+  # RUNTIME / ENVIRONMENT
+  # MTA-01200 - MTA-01299
+  # =========================================================================
+
+  MTA-01200:
+    title: Runtime environment unavailable
+    category: runtime
+    severity: error
+    description: No supported operating-system environment variable contains an active MonitAudit environment.
+    solution: Configure a supported MonitAudit environment variable.
+    exception: monitaudit.utilities.load_config.ConfigurationError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context: []
+    tags:
+      - runtime
+      - environment
+
+  MTA-01201:
+    title: Invalid environment variable value
+    category: runtime
+    severity: error
+    description: An operating-system environment variable contains an invalid environment name.
+    solution: Correct the value of the named environment variable.
+    exception: monitaudit.utilities.load_config.ConfigurationError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - variable
+      - value
+    tags:
+      - runtime
+      - environment
+
+  MTA-01202:
+    title: Runtime detection failed
+    category: runtime
+    severity: error
+    description: MonitAudit could not determine the required runtime type.
+    solution: Verify the execution environment and runtime configuration.
+    exception: builtins.RuntimeError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context: []
+    tags:
+      - runtime
+
+
+  # =========================================================================
+  # INTERNAL CONSISTENCY
+  # MTA-01300 - MTA-01399
+  # =========================================================================
+
+  MTA-01300:
+    title: Canonical log mapping mismatch
+    category: internal
+    severity: critical
+    description: The canonical log record does not match LOG_FIELD_NAMES.
+    solution: Verify the log model and canonical mapping definitions.
+    exception: builtins.RuntimeError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context: []
+    tags:
+      - internal
+      - mapping
+
+  MTA-01301:
+    title: Internal state inconsistency
+    category: internal
+    severity: critical
+    description: MonitAudit detected inconsistent internal state.
+    solution: Inspect the associated diagnostic context.
+    exception: builtins.RuntimeError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context: []
+    tags:
+      - internal
+
+  MTA-01302:
+    title: Unexpected internal value
+    category: internal
+    severity: critical
+    description: An internal MonitAudit value violates an expected invariant.
+    solution: Inspect the associated diagnostic context.
+    exception: builtins.RuntimeError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - value
+    tags:
+      - internal
+      - validation
+
+
+  # =========================================================================
+  # FILESYSTEM / I/O
+  # MTA-01400 - MTA-01499
+  #
+  # These are fallback codes.
+  # Use subsystem-specific codes whenever available.
+  # =========================================================================
+
+  MTA-01400:
+    title: Unclassified path not found
+    category: io
+    severity: error
+    description: A filesystem path required by an unclassified MonitAudit operation does not exist.
+    solution: Verify that the configured path exists.
+    exception: builtins.FileNotFoundError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - path
+    tags:
+      - io
+      - filesystem
+      - fallback
+
+  MTA-01401:
+    title: Unclassified path is not a file
+    category: io
+    severity: error
+    description: A file was expected by an unclassified operation but the path is not a file.
+    solution: Configure the path to a valid file.
+    exception: builtins.ValueError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - path
+    tags:
+      - io
+      - filesystem
+      - fallback
+
+  MTA-01402:
+    title: Unclassified path is not a directory
+    category: io
+    severity: error
+    description: A directory was expected by an unclassified operation but the path is not a directory.
+    solution: Configure the path to a valid directory.
+    exception: builtins.ValueError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - path
+    tags:
+      - io
+      - filesystem
+      - fallback
+
+  MTA-01403:
+    title: Unclassified permission denied
+    category: io
+    severity: error
+    description: A filesystem operation was rejected because of insufficient permissions.
+    solution: Verify filesystem permissions for the MonitAudit process.
+    exception: builtins.PermissionError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - path
+    tags:
+      - io
+      - filesystem
+      - permissions
+      - fallback
+
+  MTA-01404:
+    title: Unclassified read failed
+    category: io
+    severity: error
+    description: An unclassified MonitAudit operation could not read a required resource.
+    solution: Verify the resource, path and permissions.
+    exception: builtins.OSError
+    retryable: true
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - path
+    tags:
+      - io
+      - filesystem
+      - fallback
+
+  MTA-01405:
+    title: Unclassified write failed
+    category: io
+    severity: error
+    description: An unclassified MonitAudit operation could not write to its destination.
+    solution: Verify the destination, permissions and available storage.
+    exception: builtins.OSError
+    retryable: true
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - path
+    tags:
+      - io
+      - filesystem
+      - fallback
+
+
+  # =========================================================================
+  # ERROR CATALOGUE
+  # MTA-01500 - MTA-01599
+  # =========================================================================
+
+  MTA-01500:
+    title: Error catalogue not found
+    category: error_catalogue
+    severity: error
+    description: The MonitAudit error catalogue could not be found.
+    solution: Verify the configured error catalogue path.
+    exception: builtins.FileNotFoundError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - path
+    tags:
+      - error_catalogue
+      - configuration
+
+  MTA-01501:
+    title: Error catalogue unreadable
+    category: error_catalogue
+    severity: error
+    description: The MonitAudit error catalogue could not be read.
+    solution: Verify the catalogue path and filesystem permissions.
+    exception: builtins.OSError
+    retryable: true
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - path
+    tags:
+      - error_catalogue
+      - io
+
+  MTA-01502:
+    title: Error catalogue YAML invalid
+    category: error_catalogue
+    severity: error
+    description: The MonitAudit error catalogue is not valid YAML.
+    solution: Correct the catalogue YAML syntax.
+    exception: yaml.YAMLError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - path
+    tags:
+      - error_catalogue
+      - yaml
+
+  MTA-01503:
+    title: Error catalogue schema invalid
+    category: error_catalogue
+    severity: error
+    description: The MonitAudit error catalogue does not conform to its schema.
+    solution: Correct the catalogue metadata or error definitions.
+    exception: pydantic.ValidationError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - path
+    tags:
+      - error_catalogue
+      - schema
+      - validation
+
+  MTA-01504:
+    title: Error code not found
+    category: error_catalogue
+    severity: error
+    description: A requested MTA error code does not exist in the loaded catalogue.
+    solution: Correct the code reference or add the missing catalogue definition.
+    exception: builtins.KeyError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - code
+    tags:
+      - error_catalogue
+      - lookup
+
+  MTA-01505:
+    title: Duplicate error code
+    category: error_catalogue
+    severity: critical
+    description: The error catalogue contains a duplicate MTA error-code definition.
+    solution: Remove the duplicate and retain one authoritative definition.
+    exception: builtins.ValueError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - code
+    tags:
+      - error_catalogue
+      - validation
+
+  MTA-01506:
+    title: Error-code range conflict
+    category: error_catalogue
+    severity: critical
+    description: An error code is assigned to a category outside its reserved numeric range.
+    solution: Assign the condition to the correct unused code without reusing a published code.
+    exception: builtins.ValueError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - code
+      - category
+    tags:
+      - error_catalogue
+      - taxonomy
+      - validation
+
+
+  # =========================================================================
+  # UNEXPECTED / UNKNOWN
+  # MTA-09900 - MTA-09999
+  #
+  # These should only be used when no more specific MTA code applies.
+  # =========================================================================
+
+  MTA-09900:
+    title: Unexpected MonitAudit error
+    category: unexpected
+    severity: critical
+    description: MonitAudit encountered an unexpected internal error that could not be classified more specifically.
+    solution: Inspect the original exception and diagnostic context.
+    exception: builtins.RuntimeError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - error_type
+    tags:
+      - unexpected
+      - internal
+      - fallback
+
+  MTA-09999:
+    title: Unknown error
+    category: unexpected
+    severity: critical
+    description: An error condition could not be classified by MonitAudit.
+    solution: Inspect the original exception and report the diagnostic context.
+    exception: builtins.RuntimeError
+    retryable: false
+    status: active
+    introduced: 1.4.0
+    deprecated: null
+    replaced_by: null
+    documentation: null
+    context:
+      - error_type
+    tags:
+      - unknown
+      - unexpected
+      - fallback
