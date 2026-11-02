@@ -1,6 +1,8 @@
-# monitaudit.runtime.yaml
+# ---------------------------------------------------------------------------
+# monitaudit.runtime
 # Application-specific MonitAudit runtime configuration.
-
+# default all sinks false meand NO output
+# ---------------------------------------------------------------------------
 monitaudit:
   application: myappl
 
@@ -28,7 +30,10 @@ monitaudit:
 
     dev:
       sinks:
+        console_sink:
+          enabled: true
         delta_sink:
+          enabled: false              
           table: dev.monitaudit.monitaudit_logs
 
     # -----------------------------------------------------------------------
@@ -60,5 +65,5 @@ monitaudit:
           path: /var/log/monitaudit/monitaudit.jsonl
 
         delta_sink:
-          enabled: true
+          enabled: false
           table: prod.monitaudit.monitaudit_logs

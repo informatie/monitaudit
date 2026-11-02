@@ -6,7 +6,7 @@ Monitaudit uses a `config` directory containing two configuration files:
 your-application/
 ├── config/
 │   ├── monitaudit.properties
-│   └── monitaudit.runtime.yaml
+│   └── monitaudit.runtime
 └── main.py
 ```
 
@@ -29,14 +29,14 @@ logging.max_parameter_length=1000
 logging.sink_failure_mode=continue
 ```
 
-### `monitaudit.runtime.yaml`
+### `monitaudit.runtime`
 
-`monitaudit.runtime.yaml` contains application-specific and environment-specific runtime configuration.
+`monitaudit.runtime` contains application-specific and environment-specific runtime configuration.
 
 Example:
 
 ```yaml
-# config/monitaudit.runtime.yaml
+# config/monitaudit.runtime
 
 monitaudit:
   application: my-application

@@ -11,7 +11,7 @@ USAGE_PATH = PROJECT_DIR / "PYPI_USAGE.md"
 
 CONFIG_DIR = PROJECT_DIR / "config" / "monitaudit"
 PROPERTIES_PATH = CONFIG_DIR / "example_monitaudit.properties"
-RUNTIME_PATH = CONFIG_DIR / "example_monitaudit.runtime.yaml"
+RUNTIME_PATH = CONFIG_DIR / "example_monitaudit.runtime"
 
 OUTPUT_PATH = PROJECT_DIR / "README.md"
 
@@ -51,7 +51,7 @@ def build_pypi_readme() -> str:
         ),
         "## `config/monitaudit.properties`",
         fenced_code("properties", properties),
-        "## `config/monitaudit.runtime.yaml`",
+        "## `config/monitaudit.runtime`",
         fenced_code("yaml", runtime),
     ]
 

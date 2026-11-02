@@ -76,7 +76,7 @@ def _safe_repr(
 ) -> str:
     try:
         return repr(value)
-    except Exception: # noqa: BLE001
+    except Exception:
         return (
             f"<unserializable "
             f"{type(value).__name__}>"

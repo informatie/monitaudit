@@ -68,7 +68,7 @@ Monitaudit uses a `config` directory containing two configuration files:
 your-application/
 ├── config/
 │   ├── monitaudit.properties
-│   └── monitaudit.runtime.yaml
+│   └── monitaudit.runtime
 └── main.py
 ```
 
@@ -91,14 +91,14 @@ logging.max_parameter_length=1000
 logging.sink_failure_mode=continue
 ```
 
-### `monitaudit.runtime.yaml`
+### `monitaudit.runtime`
 
-`monitaudit.runtime.yaml` contains application-specific and environment-specific runtime configuration.
+`monitaudit.runtime` contains application-specific and environment-specific runtime configuration.
 
 Example:
 
 ```yaml
-# config/monitaudit.runtime.yaml
+# config/monitaudit.runtime
 
 monitaudit:
   application: my-application
@@ -219,7 +219,7 @@ The following examples show the complete Monitaudit configuration files.
 # Application-specific and environment-specific settings should normally be
 # placed in:
 #
-#     config/monitaudit.runtime.yaml
+#     config/monitaudit.runtime
 #
 # The runtime configuration can override defaults defined here.
 #
@@ -229,7 +229,7 @@ The following examples show the complete Monitaudit configuration files.
 #     |
 #     +-- config/
 #     |   +-- monitaudit.properties
-#     |   +-- monitaudit.runtime.yaml
+#     |   +-- monitaudit.runtime
 #     |
 #     +-- main.py
 #
@@ -338,7 +338,7 @@ logging.sink_failure_mode=continue
 #     Delta
 #
 # Sink-specific runtime paths, table names, and environment-dependent settings
-# are better placed in monitaudit.runtime.yaml when they differ between
+# are better placed in monitaudit.runtime when they differ between
 # applications or environments.
 #
 # The examples below illustrate the intended configuration categories.
@@ -382,7 +382,7 @@ console_sink.enabled=true
 #       path: output/file_sink/application.log
 #
 # Paths are application-specific, so the actual output path should preferably
-# be configured in monitaudit.runtime.yaml rather than hard-coded into the
+# be configured in monitaudit.runtime rather than hard-coded into the
 # library defaults.
 #
 # ==============================================================================
@@ -405,7 +405,7 @@ file_sink.enabled=false
 #       enabled: true
 #       path: output/json_sink/application.jsonl
 #
-# Keep application-specific paths in monitaudit.runtime.yaml.
+# Keep application-specific paths in monitaudit.runtime.
 #
 # ==============================================================================
 
@@ -429,7 +429,7 @@ json_sink.enabled=false
 #       path: output/delta_sink/application
 #
 # Table and path values are application/environment-specific and should
-# therefore normally be defined in monitaudit.runtime.yaml.
+# therefore normally be defined in monitaudit.runtime.
 #
 # ==============================================================================
 
@@ -443,7 +443,7 @@ delta_sink.enabled=false
 # The properties in this file establish defaults.
 #
 # A development application could override them from
-# monitaudit.runtime.yaml, for example:
+# monitaudit.runtime, for example:
 #
 #     monitaudit:
 #       application: example-application
@@ -488,7 +488,7 @@ delta_sink.enabled=false
 #
 #     MONITAUDIT_ENV=dev uv run python main.py
 #
-# Environment-specific configuration belongs in monitaudit.runtime.yaml.
+# Environment-specific configuration belongs in monitaudit.runtime.
 #
 # ==============================================================================
 # RECOMMENDED RESPONSIBILITY SPLIT
@@ -503,7 +503,7 @@ delta_sink.enabled=false
 #     Default sink enablement
 #
 #
-# monitaudit.runtime.yaml
+# monitaudit.runtime
 # -----------------------
 #
 #     Application name
@@ -528,7 +528,7 @@ delta_sink.enabled=false
 # ==============================================================================
 ````
 
-## `config/monitaudit.runtime.yaml`
+## `config/monitaudit.runtime`
 
 ````yaml
 # config/monitaudit.yaml
