@@ -1,4 +1,4 @@
-# config/monitaudit/error-catalogue.schema.yaml
+# config/error/monitaudit-catalogue.schema
 
 $schema: "https://json-schema.org/draft/2020-12/schema"
 $id: "monitaudit-error-catalogue"
