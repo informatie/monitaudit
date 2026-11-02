@@ -8,7 +8,7 @@ MonitAudit follows Semantic Versioning:
 - **MINOR** – new functionality added in a backwards-compatible manner
 - **PATCH** – backwards-compatible fixes, improvements and maintenance
 
----
+---ß
 ## 1.3.0 - ????-??-??
 
 ### Changed
