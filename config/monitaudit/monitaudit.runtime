@@ -32,6 +32,12 @@ monitaudit:
       sinks:
         console_sink:
           enabled: true
+        file_sink:
+          path: output/file/monitaudit        
+          enabled: true          
+        json_sink:
+          path: output/files/monitaudit        
+          enabled: true          
         delta_sink:
           enabled: false              
           table: dev.monitaudit.monitaudit_logs

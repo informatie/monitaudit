@@ -1,893 +1,1083 @@
-# tests/sinks/test_json.py
+# tests/sinks/test_sink_json.py
 
 from __future__ import annotations
 
 import json
+import os
+import zipfile
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, cast
+from unittest.mock import patch
 
 import pytest
 
 from monitaudit.models.base import BaseLog
-from monitaudit.sinks.base import Sink
 from monitaudit.sinks.json import JsonSink
 
 
-class FakeLog:
-    def __init__(
-        self,
-        serialised: str,
-    ) -> None:
-        self.serialised = serialised
-        self.calls = 0
+def _base_log() -> BaseLog:
+    """Create a BaseLog without depending on required model fields."""
 
-    def model_dump_json(
-        self,
-    ) -> str:
-        self.calls += 1
-        return self.serialised
+    return BaseLog.model_construct()
 
 
-class FailingLog:
-    def __init__(
-        self,
-        exception: Exception,
-    ) -> None:
-        self.exception = exception
-        self.calls = 0
+def _set_modified_at(
+    path: Path,
+    modified_at: datetime,
+) -> None:
+    """Set a file's access and modification timestamps."""
 
-    def model_dump_json(
-        self,
-    ) -> str:
-        self.calls += 1
-        raise self.exception
+    timestamp = modified_at.timestamp()
 
-
-def as_base_log(
-    value: Any,
-) -> BaseLog:
-    """
-    Cast a test double to BaseLog.
-
-    JsonSink only requires model_dump_json(), so these tests avoid
-    coupling sink behaviour to BaseLog model validation.
-    """
-
-    return cast(
-        BaseLog,
-        value,
+    os.utime(
+        path,
+        (
+            timestamp,
+            timestamp,
+        ),
     )
 
 
-class TestJsonSinkConstruction:
-    def test_inherits_from_sink(
+def _set_file_age(
+    path: Path,
+    *,
+    days: int,
+) -> datetime:
+    """Set a file's modification time to the requested age."""
+
+    modified_at = (
+        datetime.now(timezone.utc)
+        - timedelta(days=days)
+    ).replace(
+        second=0,
+        microsecond=0,
+    )
+
+    _set_modified_at(
+        path,
+        modified_at,
+    )
+
+    return modified_at
+
+
+def _expected_archive_path(
+    source: Path,
+    *,
+    modified_at: datetime,
+) -> Path:
+    """Return the expected timestamped archive path."""
+
+    timestamp = modified_at.astimezone(
+        timezone.utc
+    ).strftime(
+        "%Y%m%d%H%M"
+    )
+
+    return source.parent / (
+        f"monitaudit_{timestamp}.zip"
+    )
+
+
+def _create_jsonl(
+    directory: Path,
+    *,
+    filename: str = "previous.jsonl",
+    contents: str = '{"message":"old"}\n',
+    days: int = 20,
+) -> tuple[Path, datetime]:
+    """Create a JSONL file with a configured modification age."""
+
+    source = directory / filename
+
+    source.write_text(
+        contents,
+        encoding="utf-8",
+    )
+
+    modified_at = _set_file_age(
+        source,
+        days=days,
+    )
+
+    return source, modified_at
+
+
+class TestJsonSinkValidation:
+    def test_path_object_currently_raises_attribute_error(
         self,
         tmp_path: Path,
     ) -> None:
-        sink = JsonSink(
-            str(
-                tmp_path / "log.jsonl"
+        """Record the current path validation behaviour."""
+
+        with pytest.raises(
+            AttributeError,
+        ):
+            JsonSink(
+                path=tmp_path,  # type: ignore[arg-type]
             )
-        )
 
-        assert isinstance(
-            sink,
-            Sink,
-        )
-
-    def test_stores_path_as_path_object(
+    @pytest.mark.parametrize(
+        "path",
+        [
+            "",
+            " ",
+            "   ",
+            "\t",
+            "\n",
+        ],
+    )
+    def test_path_cannot_be_empty_or_whitespace(
         self,
-        tmp_path: Path,
-    ) -> None:
-        path = tmp_path / "log.jsonl"
-
-        sink = JsonSink(
-            str(path)
-        )
-
-        assert sink.path == path
-        assert isinstance(
-            sink.path,
-            Path,
-        )
-
-    def test_accepts_relative_path(
-        self,
-        tmp_path: Path,
-        monkeypatch: pytest.MonkeyPatch,
-    ) -> None:
-        monkeypatch.chdir(
-            tmp_path
-        )
-
-        sink = JsonSink(
-            "output/log.jsonl"
-        )
-
-        assert sink.path == Path(
-            "output/log.jsonl"
-        )
-
-    def test_rejects_empty_path(
-        self,
+        path: str,
     ) -> None:
         with pytest.raises(
-            ValueError
-        ) as exception_info:
-            JsonSink("")
+            ValueError,
+        ):
+            JsonSink(
+                path=path,
+            )
 
-        assert (
-            str(exception_info.value)
-            == "JSON sink path cannot be empty."
-        )
-
-    def test_whitespace_path_is_currently_accepted(
-        self,
-        tmp_path: Path,
-        monkeypatch: pytest.MonkeyPatch,
-    ) -> None:
-        monkeypatch.chdir(
-            tmp_path
-        )
-
-        sink = JsonSink("   ")
-
-        assert sink.path == Path("   ")
-
-
-class TestDirectoryCreation:
-    def test_creates_parent_directory(
+    def test_file_cycle_accepts_none(
         self,
         tmp_path: Path,
     ) -> None:
-        path = (
-            tmp_path
-            / "output"
-            / "json"
-            / "log.jsonl"
+        sink = JsonSink(
+            path=str(tmp_path / "monitaudit"),
+            file_cycle=None,
         )
 
-        assert not path.parent.exists()
+        assert sink.file_cycle is None
+
+    @pytest.mark.parametrize(
+        "value",
+        [
+            1,
+            10,
+            30,
+            90,
+        ],
+    )
+    def test_file_cycle_accepts_positive_integer(
+        self,
+        tmp_path: Path,
+        value: int,
+    ) -> None:
+        sink = JsonSink(
+            path=str(tmp_path / "monitaudit"),
+            file_cycle=value,
+        )
+
+        assert sink.file_cycle == value
+
+    @pytest.mark.parametrize(
+        (
+            "value",
+            "expected",
+        ),
+        [
+            (1.0, 1.0),
+            (10.0, 10.0),
+            (True, True),
+        ],
+    )
+    def test_file_cycle_currently_accepts_compatible_numeric_values(
+        self,
+        tmp_path: Path,
+        value: object,
+        expected: object,
+    ) -> None:
+        """Record current non-strict validation behaviour."""
+
+        sink = JsonSink(
+            path=str(tmp_path / "monitaudit"),
+            file_cycle=value,  # type: ignore[arg-type]
+        )
+
+        assert sink.file_cycle == expected
+
+    @pytest.mark.parametrize(
+        "value",
+        [
+            "10",
+            [],
+            {},
+            object(),
+        ],
+    )
+    def test_file_cycle_rejects_non_numeric_types(
+        self,
+        tmp_path: Path,
+        value: object,
+    ) -> None:
+        with pytest.raises(
+            TypeError,
+        ):
+            JsonSink(
+                path=str(tmp_path / "monitaudit"),
+                file_cycle=value,  # type: ignore[arg-type]
+            )
+
+    @pytest.mark.parametrize(
+        "value",
+        [
+            False,
+            0,
+            -1,
+            -10,
+            -1.0,
+        ],
+    )
+    def test_file_cycle_rejects_non_positive_value(
+        self,
+        tmp_path: Path,
+        value: object,
+    ) -> None:
+        with pytest.raises(
+            ValueError,
+        ):
+            JsonSink(
+                path=str(tmp_path / "monitaudit"),
+                file_cycle=value,  # type: ignore[arg-type]
+            )
+
+
+class TestJsonSinkPath:
+    def test_json_sink_adds_jsonl_suffix(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        sink = JsonSink(
+            path=str(tmp_path / "monitaudit"),
+        )
+
+        assert sink.path == (
+            tmp_path / "monitaudit.jsonl"
+        )
+
+    def test_json_sink_preserves_jsonl_suffix(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        sink = JsonSink(
+            path=str(
+                tmp_path / "monitaudit.jsonl"
+            ),
+        )
+
+        assert sink.path == (
+            tmp_path / "monitaudit.jsonl"
+        )
+
+    def test_json_sink_replaces_existing_suffix(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        sink = JsonSink(
+            path=str(tmp_path / "monitaudit.log"),
+        )
+
+        assert sink.path == (
+            tmp_path / "monitaudit.jsonl"
+        )
+
+    def test_parent_directory_is_created(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        directory = (
+            tmp_path
+            / "nested"
+            / "logs"
+        )
 
         JsonSink(
-            str(path)
+            path=str(directory / "monitaudit"),
         )
 
-        assert path.parent.exists()
-        assert path.parent.is_dir()
+        assert directory.is_dir()
 
-    def test_creates_nested_parent_directories(
+
+class TestJsonSinkArchiveUtility:
+    def test_archive_utility_receives_jsonl_extension(
         self,
         tmp_path: Path,
     ) -> None:
-        path = (
-            tmp_path
-            / "one"
-            / "two"
-            / "three"
-            / "log.jsonl"
+        with patch(
+            "monitaudit.sinks.json.archive_expired_files"
+        ) as archive:
+            sink = JsonSink(
+                path=str(tmp_path / "monitaudit"),
+                file_cycle=10,
+            )
+
+        archive.assert_called_once_with(
+            directory=tmp_path,
+            file_cycle=10,
+            extensions={".jsonl"},
+            exclude={
+                sink.path,
+            },
         )
 
-        JsonSink(
-            str(path)
+    def test_none_file_cycle_is_forwarded(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        with patch(
+            "monitaudit.sinks.json.archive_expired_files"
+        ) as archive:
+            sink = JsonSink(
+                path=str(tmp_path / "monitaudit"),
+                file_cycle=None,
+            )
+
+        archive.assert_called_once_with(
+            directory=tmp_path,
+            file_cycle=None,
+            extensions={".jsonl"},
+            exclude={
+                sink.path,
+            },
         )
 
-        assert path.parent.is_dir()
-
-    def test_existing_parent_directory_is_allowed(
+    def test_archive_utility_receives_parent_directory(
         self,
         tmp_path: Path,
     ) -> None:
         directory = (
             tmp_path
             / "output"
+        )
+
+        with patch(
+            "monitaudit.sinks.json.archive_expired_files"
+        ) as archive:
+            sink = JsonSink(
+                path=str(
+                    directory / "monitaudit"
+                ),
+                file_cycle=10,
+            )
+
+        archive.assert_called_once_with(
+            directory=directory,
+            file_cycle=10,
+            extensions={".jsonl"},
+            exclude={
+                sink.path,
+            },
+        )
+
+
+class TestJsonSinkArchiveIntegration:
+    def test_old_jsonl_file_is_archived(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        source, modified_at = _create_jsonl(
+            tmp_path,
+            days=20,
+        )
+
+        expected_archive = _expected_archive_path(
+            source,
+            modified_at=modified_at,
+        )
+
+        JsonSink(
+            path=str(tmp_path / "monitaudit"),
+            file_cycle=10,
+        )
+
+        assert not source.exists()
+        assert expected_archive.is_file()
+
+    def test_archive_uses_required_filename(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        source = (
+            tmp_path
+            / "previous.jsonl"
+        )
+
+        source.write_text(
+            '{"message":"old"}\n',
+            encoding="utf-8",
+        )
+
+        modified_at = datetime(
+            2026,
+            10,
+            20,
+            14,
+            35,
+            tzinfo=timezone.utc,
+        )
+
+        _set_modified_at(
+            source,
+            modified_at,
+        )
+
+        JsonSink(
+            path=str(tmp_path / "monitaudit"),
+            file_cycle=10,
+        )
+
+        archive_path = (
+            tmp_path
+            / "monitaudit_202610201435.zip"
+        )
+
+        assert archive_path.is_file()
+        assert not source.exists()
+
+    def test_archive_contains_original_jsonl_filename(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        source, modified_at = _create_jsonl(
+            tmp_path,
+            filename="previous.jsonl",
+            contents=(
+                '{"message":"first"}\n'
+                '{"message":"second"}\n'
+            ),
+            days=20,
+        )
+
+        archive_path = _expected_archive_path(
+            source,
+            modified_at=modified_at,
+        )
+
+        JsonSink(
+            path=str(tmp_path / "monitaudit"),
+            file_cycle=10,
+        )
+
+        with zipfile.ZipFile(
+            archive_path,
+            mode="r",
+        ) as archive:
+            assert archive.namelist() == [
+                source.name,
+            ]
+
+    def test_archive_preserves_jsonl_contents(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        contents = (
+            '{"level":"INFO","message":"first"}\n'
+            '{"level":"ERROR","message":"second"}\n'
+        )
+
+        source, modified_at = _create_jsonl(
+            tmp_path,
+            contents=contents,
+            days=20,
+        )
+
+        archive_path = _expected_archive_path(
+            source,
+            modified_at=modified_at,
+        )
+
+        JsonSink(
+            path=str(tmp_path / "monitaudit"),
+            file_cycle=10,
+        )
+
+        with zipfile.ZipFile(
+            archive_path,
+            mode="r",
+        ) as archive:
+            archived_contents = archive.read(
+                source.name
+            ).decode(
+                "utf-8"
+            )
+
+        assert archived_contents == contents
+
+    def test_created_archive_is_valid_zip(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        source, modified_at = _create_jsonl(
+            tmp_path,
+            days=20,
+        )
+
+        archive_path = _expected_archive_path(
+            source,
+            modified_at=modified_at,
+        )
+
+        JsonSink(
+            path=str(tmp_path / "monitaudit"),
+            file_cycle=10,
+        )
+
+        assert zipfile.is_zipfile(
+            archive_path
+        )
+
+        with zipfile.ZipFile(
+            archive_path,
+            mode="r",
+        ) as archive:
+            assert archive.testzip() is None
+
+    def test_recent_jsonl_file_is_not_archived(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        source, modified_at = _create_jsonl(
+            tmp_path,
+            filename="recent.jsonl",
+            days=5,
+        )
+
+        archive_path = _expected_archive_path(
+            source,
+            modified_at=modified_at,
+        )
+
+        JsonSink(
+            path=str(tmp_path / "monitaudit"),
+            file_cycle=10,
+        )
+
+        assert source.exists()
+        assert not archive_path.exists()
+
+    def test_file_cycle_none_disables_archiving(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        source, modified_at = _create_jsonl(
+            tmp_path,
+            days=100,
+        )
+
+        archive_path = _expected_archive_path(
+            source,
+            modified_at=modified_at,
+        )
+
+        JsonSink(
+            path=str(tmp_path / "monitaudit"),
+            file_cycle=None,
+        )
+
+        assert source.exists()
+        assert not archive_path.exists()
+
+    def test_active_jsonl_file_is_excluded(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        active = (
+            tmp_path
+            / "monitaudit.jsonl"
+        )
+
+        active.write_text(
+            '{"message":"active"}\n',
+            encoding="utf-8",
+        )
+
+        modified_at = _set_file_age(
+            active,
+            days=100,
+        )
+
+        archive_path = _expected_archive_path(
+            active,
+            modified_at=modified_at,
+        )
+
+        JsonSink(
+            path=str(tmp_path / "monitaudit"),
+            file_cycle=10,
+        )
+
+        assert active.exists()
+        assert not archive_path.exists()
+
+    def test_source_is_deleted_after_successful_archive(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        source, modified_at = _create_jsonl(
+            tmp_path,
+            days=20,
+        )
+
+        archive_path = _expected_archive_path(
+            source,
+            modified_at=modified_at,
+        )
+
+        JsonSink(
+            path=str(tmp_path / "monitaudit"),
+            file_cycle=10,
+        )
+
+        assert archive_path.exists()
+        assert not source.exists()
+
+
+class TestJsonSinkArchiveOwnership:
+    @pytest.mark.parametrize(
+        "filename",
+        [
+            "previous.txt",
+            "previous.csv",
+            "previous.log",
+            "previous.json",
+            "previous.yaml",
+            "previous.properties",
+        ],
+    )
+    def test_non_jsonl_file_is_not_archived(
+        self,
+        tmp_path: Path,
+        filename: str,
+    ) -> None:
+        source = (
+            tmp_path
+            / filename
+        )
+
+        source.write_text(
+            "data\n",
+            encoding="utf-8",
+        )
+
+        _set_file_age(
+            source,
+            days=20,
+        )
+
+        JsonSink(
+            path=str(tmp_path / "monitaudit"),
+            file_cycle=10,
+        )
+
+        assert source.exists()
+
+
+class TestJsonSinkArchiveExclusions:
+    def test_existing_zip_is_excluded(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        archive_path = (
+            tmp_path
+            / "monitaudit_202610201435.zip"
+        )
+
+        with zipfile.ZipFile(
+            archive_path,
+            mode="w",
+        ) as archive:
+            archive.writestr(
+                "previous.jsonl",
+                '{"message":"old"}\n',
+            )
+
+        original_contents = (
+            archive_path.read_bytes()
+        )
+
+        _set_file_age(
+            archive_path,
+            days=100,
+        )
+
+        JsonSink(
+            path=str(tmp_path / "monitaudit"),
+            file_cycle=10,
+        )
+
+        assert archive_path.exists()
+
+        assert (
+            archive_path.read_bytes()
+            == original_contents
+        )
+
+        assert not (
+            tmp_path
+            / "monitaudit_202610201435.zip.zip"
+        ).exists()
+
+    def test_zip_tmp_file_is_excluded(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        temporary_file = (
+            tmp_path
+            / ".previous.jsonl.test.zip.tmp"
+        )
+
+        temporary_file.write_bytes(
+            b"temporary archive"
+        )
+
+        _set_file_age(
+            temporary_file,
+            days=100,
+        )
+
+        JsonSink(
+            path=str(tmp_path / "monitaudit"),
+            file_cycle=10,
+        )
+
+        assert temporary_file.exists()
+
+    def test_lock_file_is_excluded(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        lock_file = (
+            tmp_path
+            / "previous.jsonl.lock"
+        )
+
+        lock_file.write_text(
+            "",
+            encoding="utf-8",
+        )
+
+        _set_file_age(
+            lock_file,
+            days=100,
+        )
+
+        JsonSink(
+            path=str(tmp_path / "monitaudit"),
+            file_cycle=10,
+        )
+
+        assert lock_file.exists()
+
+    def test_directory_with_jsonl_suffix_is_excluded(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        directory = (
+            tmp_path
+            / "directory.jsonl"
         )
 
         directory.mkdir()
 
-        path = (
-            directory
-            / "log.jsonl"
+        JsonSink(
+            path=str(tmp_path / "monitaudit"),
+            file_cycle=10,
         )
 
-        sink = JsonSink(
-            str(path)
-        )
+        assert directory.is_dir()
 
-        assert sink.path == path
-
-    def test_construction_does_not_create_output_file(
+    def test_jsonl_symlink_is_excluded(
         self,
         tmp_path: Path,
     ) -> None:
-        path = (
+        target = (
             tmp_path
-            / "output"
-            / "log.jsonl"
+            / "target.data"
+        )
+
+        target.write_text(
+            "target",
+            encoding="utf-8",
+        )
+
+        _set_file_age(
+            target,
+            days=100,
+        )
+
+        link = (
+            tmp_path
+            / "previous.jsonl"
+        )
+
+        try:
+            link.symlink_to(
+                target
+            )
+        except OSError:
+            pytest.skip(
+                "Symbolic links are unavailable."
+            )
+
+        JsonSink(
+            path=str(tmp_path / "monitaudit"),
+            file_cycle=10,
+        )
+
+        assert link.is_symlink()
+        assert target.exists()
+
+
+class TestJsonSinkArchiveCollision:
+    def test_existing_timestamped_archive_is_not_overwritten(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        source = (
+            tmp_path
+            / "previous.jsonl"
+        )
+
+        source.write_text(
+            '{"message":"new"}\n',
+            encoding="utf-8",
+        )
+
+        modified_at = datetime(
+            2026,
+            10,
+            20,
+            14,
+            35,
+            tzinfo=timezone.utc,
+        )
+
+        _set_modified_at(
+            source,
+            modified_at,
+        )
+
+        archive_path = (
+            tmp_path
+            / "monitaudit_202610201435.zip"
+        )
+
+        with zipfile.ZipFile(
+            archive_path,
+            mode="w",
+        ) as archive:
+            archive.writestr(
+                "existing.jsonl",
+                '{"message":"existing"}\n',
+            )
+
+        original_archive = (
+            archive_path.read_bytes()
         )
 
         JsonSink(
-            str(path)
+            path=str(tmp_path / "monitaudit"),
+            file_cycle=10,
         )
 
-        assert path.parent.exists()
-        assert not path.exists()
+        assert source.exists()
 
-    def test_directory_creation_error_is_propagated(
+        assert (
+            archive_path.read_bytes()
+            == original_archive
+        )
+
+        with zipfile.ZipFile(
+            archive_path,
+            mode="r",
+        ) as archive:
+            assert archive.namelist() == [
+                "existing.jsonl",
+            ]
+
+    def test_different_minutes_create_different_archives(
         self,
         tmp_path: Path,
     ) -> None:
-        parent_file = (
+        first = (
             tmp_path
-            / "not-a-directory"
+            / "first.jsonl"
         )
 
-        parent_file.write_text(
-            "existing file",
+        second = (
+            tmp_path
+            / "second.jsonl"
+        )
+
+        first.write_text(
+            '{"message":"first"}\n',
             encoding="utf-8",
         )
 
-        target = (
-            parent_file
-            / "log.jsonl"
+        second.write_text(
+            '{"message":"second"}\n',
+            encoding="utf-8",
         )
 
-        with pytest.raises(
-            OSError
+        first_time = datetime(
+            2026,
+            10,
+            20,
+            14,
+            35,
+            tzinfo=timezone.utc,
+        )
+
+        second_time = datetime(
+            2026,
+            10,
+            20,
+            14,
+            36,
+            tzinfo=timezone.utc,
+        )
+
+        _set_modified_at(
+            first,
+            first_time,
+        )
+
+        _set_modified_at(
+            second,
+            second_time,
+        )
+
+        JsonSink(
+            path=str(tmp_path / "monitaudit"),
+            file_cycle=10,
+        )
+
+        first_archive = (
+            tmp_path
+            / "monitaudit_202610201435.zip"
+        )
+
+        second_archive = (
+            tmp_path
+            / "monitaudit_202610201436.zip"
+        )
+
+        assert first_archive.exists()
+        assert second_archive.exists()
+        assert not first.exists()
+        assert not second.exists()
+
+
+class TestJsonSinkWrite:
+    def test_write_creates_jsonl_file(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        sink = JsonSink(
+            path=str(tmp_path / "monitaudit"),
+        )
+
+        log = _base_log()
+
+        with patch.object(
+            BaseLog,
+            "model_dump_json",
+            return_value='{"message":"test"}',
         ):
-            JsonSink(
-                str(target)
+            sink.write(
+                log
             )
 
+        assert sink.path.is_file()
 
-class TestWrite:
-    def test_write_creates_file(
-        self,
-        tmp_path: Path,
-    ) -> None:
-        path = (
-            tmp_path
-            / "log.jsonl"
-        )
-
-        sink = JsonSink(
-            str(path)
-        )
-
-        log = FakeLog(
-            '{"message":"hello"}'
-        )
-
-        sink.write(
-            as_base_log(log)
-        )
-
-        assert path.exists()
-        assert path.is_file()
-
-    def test_write_calls_model_dump_json_once(
-        self,
-        tmp_path: Path,
-    ) -> None:
-        path = (
-            tmp_path
-            / "log.jsonl"
-        )
-
-        sink = JsonSink(
-            str(path)
-        )
-
-        log = FakeLog(
-            '{"message":"hello"}'
-        )
-
-        sink.write(
-            as_base_log(log)
-        )
-
-        assert log.calls == 1
-
-    def test_write_returns_none(
+    def test_write_appends_newline(
         self,
         tmp_path: Path,
     ) -> None:
         sink = JsonSink(
-            str(
-                tmp_path
-                / "log.jsonl"
+            path=str(tmp_path / "monitaudit"),
+        )
+
+        log = _base_log()
+
+        with patch.object(
+            BaseLog,
+            "model_dump_json",
+            return_value='{"message":"test"}',
+        ):
+            sink.write(
+                log
             )
-        )
 
-        log = FakeLog(
-            '{"message":"hello"}'
-        )
-
-        result = sink.write(
-            as_base_log(log)
-        )
-
-        assert result is None
-
-    def test_write_writes_exact_serialised_value(
-        self,
-        tmp_path: Path,
-    ) -> None:
-        path = (
-            tmp_path
-            / "log.jsonl"
-        )
-
-        sink = JsonSink(
-            str(path)
-        )
-
-        serialised = (
-            '{"message":"hello","level":"INFO"}'
-        )
-
-        sink.write(
-            as_base_log(
-                FakeLog(
-                    serialised
-                )
-            )
-        )
-
-        assert path.read_text(
-            encoding="utf-8"
-        ) == (
-            serialised
-            + "\n"
-        )
-
-    def test_write_adds_newline(
-        self,
-        tmp_path: Path,
-    ) -> None:
-        path = (
-            tmp_path
-            / "log.jsonl"
-        )
-
-        sink = JsonSink(
-            str(path)
-        )
-
-        sink.write(
-            as_base_log(
-                FakeLog(
-                    '{"value":1}'
-                )
-            )
-        )
-
-        content = path.read_text(
-            encoding="utf-8"
-        )
-
-        assert content.endswith(
-            "\n"
-        )
-
-    def test_write_does_not_add_extra_blank_line(
-        self,
-        tmp_path: Path,
-    ) -> None:
-        path = (
-            tmp_path
-            / "log.jsonl"
-        )
-
-        sink = JsonSink(
-            str(path)
-        )
-
-        sink.write(
-            as_base_log(
-                FakeLog(
-                    '{"value":1}'
-                )
-            )
-        )
-
-        assert path.read_text(
-            encoding="utf-8"
-        ) == '{"value":1}\n'
-
-
-class TestAppendBehaviour:
-    def test_multiple_writes_are_appended(
-        self,
-        tmp_path: Path,
-    ) -> None:
-        path = (
-            tmp_path
-            / "log.jsonl"
-        )
-
-        sink = JsonSink(
-            str(path)
-        )
-
-        sink.write(
-            as_base_log(
-                FakeLog(
-                    '{"id":1}'
-                )
-            )
-        )
-        sink.write(
-            as_base_log(
-                FakeLog(
-                    '{"id":2}'
-                )
-            )
-        )
-        sink.write(
-            as_base_log(
-                FakeLog(
-                    '{"id":3}'
-                )
-            )
-        )
-
-        assert path.read_text(
-            encoding="utf-8"
-        ) == (
-            '{"id":1}\n'
-            '{"id":2}\n'
-            '{"id":3}\n'
-        )
-
-    def test_existing_file_content_is_preserved(
-        self,
-        tmp_path: Path,
-    ) -> None:
-        path = (
-            tmp_path
-            / "log.jsonl"
-        )
-
-        path.write_text(
-            '{"existing":true}\n',
+        assert sink.path.read_text(
             encoding="utf-8",
-        )
+        ) == '{"message":"test"}\n'
 
-        sink = JsonSink(
-            str(path)
-        )
-
-        sink.write(
-            as_base_log(
-                FakeLog(
-                    '{"new":true}'
-                )
-            )
-        )
-
-        assert path.read_text(
-            encoding="utf-8"
-        ) == (
-            '{"existing":true}\n'
-            '{"new":true}\n'
-        )
-
-    def test_each_write_calls_its_log_once(
+    def test_write_appends_multiple_json_lines(
         self,
         tmp_path: Path,
     ) -> None:
         sink = JsonSink(
-            str(
-                tmp_path
-                / "log.jsonl"
+            path=str(tmp_path / "monitaudit"),
+        )
+
+        log = _base_log()
+
+        with patch.object(
+            BaseLog,
+            "model_dump_json",
+            side_effect=[
+                '{"message":"first"}',
+                '{"message":"second"}',
+            ],
+        ):
+            sink.write(
+                log
             )
-        )
 
-        first = FakeLog(
-            '{"id":1}'
-        )
-        second = FakeLog(
-            '{"id":2}'
-        )
-
-        sink.write(
-            as_base_log(first)
-        )
-        sink.write(
-            as_base_log(second)
-        )
-
-        assert first.calls == 1
-        assert second.calls == 1
-
-
-class TestJsonLines:
-    def test_each_line_is_valid_json(
-        self,
-        tmp_path: Path,
-    ) -> None:
-        path = (
-            tmp_path
-            / "log.jsonl"
-        )
-
-        sink = JsonSink(
-            str(path)
-        )
-
-        sink.write(
-            as_base_log(
-                FakeLog(
-                    '{"id":1,"message":"first"}'
-                )
+            sink.write(
+                log
             )
-        )
-        sink.write(
-            as_base_log(
-                FakeLog(
-                    '{"id":2,"message":"second"}'
-                )
-            )
-        )
 
-        lines = path.read_text(
-            encoding="utf-8"
+        lines = sink.path.read_text(
+            encoding="utf-8",
         ).splitlines()
 
-        assert len(lines) == 2
+        assert lines == [
+            '{"message":"first"}',
+            '{"message":"second"}',
+        ]
 
-        assert json.loads(
-            lines[0]
-        ) == {
-            "id": 1,
-            "message": "first",
-        }
-
-        assert json.loads(
-            lines[1]
-        ) == {
-            "id": 2,
-            "message": "second",
-        }
-
-    def test_preserves_json_null(
+    def test_written_lines_are_valid_json(
         self,
         tmp_path: Path,
     ) -> None:
-        path = (
-            tmp_path
-            / "log.jsonl"
-        )
-
         sink = JsonSink(
-            str(path)
+            path=str(tmp_path / "monitaudit"),
         )
 
-        sink.write(
-            as_base_log(
-                FakeLog(
-                    '{"value":null}'
-                )
+        log = _base_log()
+
+        expected = {
+            "level": "INFO",
+            "message": "test",
+        }
+
+        with patch.object(
+            BaseLog,
+            "model_dump_json",
+            return_value=json.dumps(
+                expected
+            ),
+        ):
+            sink.write(
+                log
             )
-        )
 
-        line = path.read_text(
-            encoding="utf-8"
+        line = sink.path.read_text(
+            encoding="utf-8",
         ).strip()
 
         assert json.loads(
             line
-        ) == {
-            "value": None,
-        }
-
-    def test_preserves_nested_json(
-        self,
-        tmp_path: Path,
-    ) -> None:
-        path = (
-            tmp_path
-            / "log.jsonl"
-        )
-
-        serialised = (
-            '{"parameters":{"customer_id":42,'
-            '"active":true}}'
-        )
-
-        sink = JsonSink(
-            str(path)
-        )
-
-        sink.write(
-            as_base_log(
-                FakeLog(
-                    serialised
-                )
-            )
-        )
-
-        result = json.loads(
-            path.read_text(
-                encoding="utf-8"
-            )
-        )
-
-        assert result == {
-            "parameters": {
-                "customer_id": 42,
-                "active": True,
-            }
-        }
-
-
-class TestEncoding:
-    @pytest.mark.parametrize(
-        "message",
-        [
-            "Hello",
-            "München",
-            "café",
-            "日本語",
-            "你好",
-            "🙂",
-        ],
-    )
-    def test_utf8_content_can_be_written(
-        self,
-        tmp_path: Path,
-        message: str,
-    ) -> None:
-        path = (
-            tmp_path
-            / "log.jsonl"
-        )
-
-        serialised = json.dumps(
-            {
-                "message": message,
-            },
-            ensure_ascii=False,
-        )
-
-        sink = JsonSink(
-            str(path)
-        )
-
-        sink.write(
-            as_base_log(
-                FakeLog(
-                    serialised
-                )
-            )
-        )
-
-        result = json.loads(
-            path.read_text(
-                encoding="utf-8"
-            )
-        )
-
-        assert result == {
-            "message": message,
-        }
-
-
-class TestSerialisationFailures:
-    def test_model_dump_json_error_is_propagated(
-        self,
-        tmp_path: Path,
-    ) -> None:
-        path = (
-            tmp_path
-            / "log.jsonl"
-        )
-
-        sink = JsonSink(
-            str(path)
-        )
-
-        expected_exception = RuntimeError(
-            "serialisation failed"
-        )
-
-        log = FailingLog(
-            expected_exception
-        )
-
-        with pytest.raises(
-            RuntimeError
-        ) as exception_info:
-            sink.write(
-                as_base_log(log)
-            )
-
-        assert (
-            exception_info.value
-            is expected_exception
-        )
-        assert log.calls == 1
-
-    def test_serialisation_failure_does_not_write_record(
-        self,
-        tmp_path: Path,
-    ) -> None:
-        path = (
-            tmp_path
-            / "log.jsonl"
-        )
-
-        sink = JsonSink(
-            str(path)
-        )
-
-        log = FailingLog(
-            RuntimeError(
-                "serialisation failed"
-            )
-        )
-
-        with pytest.raises(
-            RuntimeError
-        ):
-            sink.write(
-                as_base_log(log)
-            )
-
-        if path.exists():
-            assert path.read_text(
-                encoding="utf-8"
-            ) == ""
-
-
-class TestFilesystemFailures:
-    def test_write_error_is_propagated(
-        self,
-        tmp_path: Path,
-    ) -> None:
-        directory = (
-            tmp_path
-            / "output"
-        )
-
-        sink = JsonSink(
-            str(directory)
-        )
-
-        directory.mkdir(
-            exist_ok=True,
-        )
-
-        with pytest.raises(
-            OSError
-        ):
-            sink.write(
-                as_base_log(
-                    FakeLog(
-                        '{"message":"test"}'
-                    )
-                )
-            )
-
-
-class TestSinkReuse:
-    def test_same_sink_can_write_multiple_records(
-        self,
-        tmp_path: Path,
-    ) -> None:
-        path = (
-            tmp_path
-            / "log.jsonl"
-        )
-
-        sink = JsonSink(
-            str(path)
-        )
-
-        for index in range(10):
-            sink.write(
-                as_base_log(
-                    FakeLog(
-                        json.dumps(
-                            {
-                                "index": index,
-                            }
-                        )
-                    )
-                )
-            )
-
-        lines = path.read_text(
-            encoding="utf-8"
-        ).splitlines()
-
-        assert len(lines) == 10
-
-        assert [
-            json.loads(
-                line
-            )["index"]
-            for line in lines
-        ] == list(
-            range(10)
-        )
-
-    def test_two_sink_instances_can_append_same_file(
-        self,
-        tmp_path: Path,
-    ) -> None:
-        path = (
-            tmp_path
-            / "log.jsonl"
-        )
-
-        first_sink = JsonSink(
-            str(path)
-        )
-        second_sink = JsonSink(
-            str(path)
-        )
-
-        first_sink.write(
-            as_base_log(
-                FakeLog(
-                    '{"source":"first"}'
-                )
-            )
-        )
-
-        second_sink.write(
-            as_base_log(
-                FakeLog(
-                    '{"source":"second"}'
-                )
-            )
-        )
-
-        assert path.read_text(
-            encoding="utf-8"
-        ) == (
-            '{"source":"first"}\n'
-            '{"source":"second"}\n'
-        )
-
-
-class TestSinkContract:
-    def test_json_sink_is_sink_subclass(
-        self,
-    ) -> None:
-        assert issubclass(
-            JsonSink,
-            Sink,
-        )
-
-    def test_write_is_callable(
-        self,
-        tmp_path: Path,
-    ) -> None:
-        sink = JsonSink(
-            str(
-                tmp_path
-                / "log.jsonl"
-            )
-        )
-
-        assert callable(
-            sink.write
-        )
-
-    def test_path_is_publicly_accessible(
-        self,
-        tmp_path: Path,
-    ) -> None:
-        path = (
-            tmp_path
-            / "log.jsonl"
-        )
-
-        sink = JsonSink(
-            str(path)
-        )
-
-        assert sink.path == path
+        ) == expected

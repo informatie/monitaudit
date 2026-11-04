@@ -23,6 +23,9 @@ MonitAudit follows Semantic Versioning:
 - ConsoleSink error im parameters, could lead to error
 - pytest, now 100%
 - monitaudit_init added, simple call
+- file life_cycle
+- path for filesink and jsonsink must be different
+- if an application has a corralation number it can be used in MTA
 
 ## 1.2.4 - 2026-11-01
 

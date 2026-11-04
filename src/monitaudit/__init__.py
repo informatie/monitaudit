@@ -16,9 +16,10 @@ from monitaudit.utilities.build_monitaudit import (
 )
 
 
-def monitaudit_init() -> Monitaudit:
-    return build_monitaudit()
-
+def monitaudit_init(
+    correlation_id: str | None = None,
+) -> Monitaudit:
+    return build_monitaudit(correlation_id=correlation_id,)
 
 __version__ = "1.2.5"
 

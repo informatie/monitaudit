@@ -42,14 +42,20 @@ class SinkFactory:
         self,
         **kwargs: Any,
     ) -> ConstructedSink:
-        self.calls.append(dict(kwargs))
+        arguments = dict(kwargs)
+
+        self.calls.append(
+            arguments
+        )
 
         instance = ConstructedSink(
             sink_type=self.sink_type,
-            arguments=dict(kwargs),
+            arguments=arguments,
         )
 
-        self.instances.append(instance)
+        self.instances.append(
+            instance
+        )
 
         return instance
 
@@ -57,10 +63,16 @@ class SinkFactory:
 class MonitauditFactory:
     """Callable test double that records Monitaudit construction."""
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+    ) -> None:
         self.calls: list[
-            tuple[tuple[Any, ...], dict[str, Any]]
+            tuple[
+                tuple[Any, ...],
+                dict[str, Any],
+            ]
         ] = []
+
         self.instance = object()
 
     def __call__(
@@ -101,11 +113,9 @@ def make_config(
     parameters: bool = True,
     max_parameter_length: int = 1000,
     sink_failure_mode: str = "continue",
+    file_cycle: int = 10,
 ) -> SimpleNamespace:
-    """
-    Build a configuration object containing the fields consumed by
-    build_monitaudit().
-    """
+    """Build a configuration consumed by build_monitaudit()."""
 
     return SimpleNamespace(
         application=application,
@@ -115,6 +125,7 @@ def make_config(
             parameters=parameters,
             max_parameter_length=max_parameter_length,
             sink_failure_mode=sink_failure_mode,
+            file_cycle=file_cycle,
         ),
         sinks=SimpleNamespace(
             console_sink=SimpleNamespace(
@@ -148,11 +159,21 @@ def make_config(
 def factories(
     monkeypatch: pytest.MonkeyPatch,
 ) -> Factories:
-    console_factory = SinkFactory("ConsoleSink")
-    file_factory = SinkFactory("FileSink")
-    json_factory = SinkFactory("JsonSink")
-    delta_factory = SinkFactory("DeltaSink")
-    monitaudit_factory = MonitauditFactory()
+    console_factory = SinkFactory(
+        "ConsoleSink"
+    )
+    file_factory = SinkFactory(
+        "FileSink"
+    )
+    json_factory = SinkFactory(
+        "JsonSink"
+    )
+    delta_factory = SinkFactory(
+        "DeltaSink"
+    )
+    monitaudit_factory = (
+        MonitauditFactory()
+    )
 
     monkeypatch.setattr(
         build_module,
@@ -195,12 +216,17 @@ def configure_loaded_config(
 ) -> list[str | Path | None]:
     """Install a load_config test double and return its call list."""
 
-    calls: list[str | Path | None] = []
+    calls: list[
+        str | Path | None
+    ] = []
 
     def fake_load_config(
         config_path: str | Path | None = None,
     ) -> SimpleNamespace:
-        calls.append(config_path)
+        calls.append(
+            config_path
+        )
+
         return config
 
     monkeypatch.setattr(
@@ -218,7 +244,9 @@ class TestConfigurationLoading:
         [
             None,
             "config/application.yaml",
-            Path("config/application.yaml"),
+            Path(
+                "config/application.yaml"
+            ),
         ],
     )
     def test_passes_config_path_to_load_config(
@@ -234,10 +262,18 @@ class TestConfigurationLoading:
             config,
         )
 
-        result = build_monitaudit(config_path)
+        result = build_monitaudit(
+            config_path
+        )
 
-        assert load_calls == [config_path]
-        assert result is factories.monitaudit.instance
+        assert load_calls == [
+            config_path,
+        ]
+
+        assert (
+            result
+            is factories.monitaudit.instance
+        )
 
     def test_does_not_transform_path_before_loading(
         self,
@@ -245,6 +281,7 @@ class TestConfigurationLoading:
         factories: Factories,
     ) -> None:
         config = make_config()
+
         config_path = Path(
             "../configuration/runtime"
         )
@@ -254,9 +291,14 @@ class TestConfigurationLoading:
             config,
         )
 
-        build_monitaudit(config_path)
+        build_monitaudit(
+            config_path
+        )
 
-        assert load_calls[0] is config_path
+        assert (
+            load_calls[0]
+            is config_path
+        )
 
     def test_propagates_configuration_loading_error(
         self,
@@ -277,12 +319,17 @@ class TestConfigurationLoading:
             failing_load_config,
         )
 
-        with pytest.raises(RuntimeError) as exception_info:
+        with pytest.raises(
+            RuntimeError,
+        ) as exception_info:
             build_monitaudit(
                 "config/missing.yaml"
             )
 
-        assert exception_info.value is expected_exception
+        assert (
+            exception_info.value
+            is expected_exception
+        )
 
 
 class TestMonitauditConstruction:
@@ -300,7 +347,11 @@ class TestMonitauditConstruction:
 
         result = build_monitaudit()
 
-        assert result is factories.monitaudit.instance
+        assert (
+            result
+            is factories.monitaudit.instance
+        )
+
         assert factories.monitaudit.calls == [
             (
                 (
@@ -328,6 +379,7 @@ class TestMonitauditConstruction:
             parameters=False,
             max_parameter_length=250,
             sink_failure_mode="raise",
+            file_cycle=45,
         )
 
         configure_loaded_config(
@@ -352,6 +404,31 @@ class TestMonitauditConstruction:
             )
         ]
 
+    def test_file_cycle_is_not_passed_to_monitaudit(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        factories: Factories,
+    ) -> None:
+        config = make_config(
+            file_cycle=30,
+        )
+
+        configure_loaded_config(
+            monkeypatch,
+            config,
+        )
+
+        build_monitaudit()
+
+        _, kwargs = (
+            factories.monitaudit.calls[0]
+        )
+
+        assert (
+            "file_cycle"
+            not in kwargs
+        )
+
     def test_returns_value_created_by_monitaudit_constructor(
         self,
         monkeypatch: pytest.MonkeyPatch,
@@ -366,7 +443,10 @@ class TestMonitauditConstruction:
 
         result = build_monitaudit()
 
-        assert result is factories.monitaudit.instance
+        assert (
+            result
+            is factories.monitaudit.instance
+        )
 
     def test_propagates_monitaudit_construction_error(
         self,
@@ -374,6 +454,7 @@ class TestMonitauditConstruction:
         factories: Factories,
     ) -> None:
         config = make_config()
+
         expected_exception = ValueError(
             "invalid Monitaudit configuration"
         )
@@ -395,10 +476,15 @@ class TestMonitauditConstruction:
             failing_monitaudit,
         )
 
-        with pytest.raises(ValueError) as exception_info:
+        with pytest.raises(
+            ValueError,
+        ) as exception_info:
             build_monitaudit()
 
-        assert exception_info.value is expected_exception
+        assert (
+            exception_info.value
+            is expected_exception
+        )
 
 
 class TestConsoleSink:
@@ -410,6 +496,7 @@ class TestConsoleSink:
         config = make_config(
             console_enabled=True,
         )
+
         config.sinks.console_sink.parameters = False
 
         configure_loaded_config(
@@ -434,6 +521,29 @@ class TestConsoleSink:
             "test",
             factories.console.instances[0],
         )
+
+    def test_file_cycle_is_not_passed_to_console_sink(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        factories: Factories,
+    ) -> None:
+        config = make_config(
+            console_enabled=True,
+            file_cycle=25,
+        )
+
+        configure_loaded_config(
+            monkeypatch,
+            config,
+        )
+
+        build_monitaudit()
+
+        assert factories.console.calls == [
+            {
+                "parameters": True,
+            }
+        ]
 
     def test_does_not_create_disabled_console_sink(
         self,
@@ -462,12 +572,13 @@ class TestFileSink:
     ) -> None:
         config = make_config(
             file_enabled=True,
+            file_cycle=30,
         )
 
         config.sinks.file_sink.path = Path(
             "logs/monitaudit.log"
         )
-        config.sinks.file_sink.format = "json"
+        config.sinks.file_sink.format = "text"
         config.sinks.file_sink.delimiter = ";"
 
         configure_loaded_config(
@@ -482,8 +593,9 @@ class TestFileSink:
                 "path": Path(
                     "logs/monitaudit.log"
                 ),
-                "format": "json",
+                "format": "text",
                 "delimiter": ";",
+                "file_cycle": 30,
             }
         ]
 
@@ -495,6 +607,53 @@ class TestFileSink:
             "test-application",
             "test",
             factories.file.instances[0],
+        )
+
+    def test_passes_default_file_cycle_to_file_sink(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        factories: Factories,
+    ) -> None:
+        config = make_config(
+            file_enabled=True,
+        )
+
+        configure_loaded_config(
+            monkeypatch,
+            config,
+        )
+
+        build_monitaudit()
+
+        assert (
+            factories.file.calls[0][
+                "file_cycle"
+            ]
+            == 10
+        )
+
+    def test_passes_custom_file_cycle_to_file_sink(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        factories: Factories,
+    ) -> None:
+        config = make_config(
+            file_enabled=True,
+            file_cycle=45,
+        )
+
+        configure_loaded_config(
+            monkeypatch,
+            config,
+        )
+
+        build_monitaudit()
+
+        assert (
+            factories.file.calls[0][
+                "file_cycle"
+            ]
+            == 45
         )
 
     def test_does_not_create_disabled_file_sink(
@@ -544,10 +703,15 @@ class TestFileSink:
             failing_file_sink,
         )
 
-        with pytest.raises(OSError) as exception_info:
+        with pytest.raises(
+            OSError,
+        ) as exception_info:
             build_monitaudit()
 
-        assert exception_info.value is expected_exception
+        assert (
+            exception_info.value
+            is expected_exception
+        )
         assert factories.monitaudit.calls == []
 
 
@@ -559,6 +723,7 @@ class TestJsonSink:
     ) -> None:
         config = make_config(
             json_enabled=True,
+            file_cycle=30,
         )
 
         config.sinks.json_sink.path = Path(
@@ -577,6 +742,7 @@ class TestJsonSink:
                 "path": Path(
                     "logs/monitaudit.jsonl"
                 ),
+                "file_cycle": 30,
             }
         ]
 
@@ -588,6 +754,53 @@ class TestJsonSink:
             "test-application",
             "test",
             factories.json.instances[0],
+        )
+
+    def test_passes_default_file_cycle_to_json_sink(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        factories: Factories,
+    ) -> None:
+        config = make_config(
+            json_enabled=True,
+        )
+
+        configure_loaded_config(
+            monkeypatch,
+            config,
+        )
+
+        build_monitaudit()
+
+        assert (
+            factories.json.calls[0][
+                "file_cycle"
+            ]
+            == 10
+        )
+
+    def test_passes_custom_file_cycle_to_json_sink(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        factories: Factories,
+    ) -> None:
+        config = make_config(
+            json_enabled=True,
+            file_cycle=45,
+        )
+
+        configure_loaded_config(
+            monkeypatch,
+            config,
+        )
+
+        build_monitaudit()
+
+        assert (
+            factories.json.calls[0][
+                "file_cycle"
+            ]
+            == 45
         )
 
     def test_does_not_create_disabled_json_sink(
@@ -607,6 +820,123 @@ class TestJsonSink:
         build_monitaudit()
 
         assert factories.json.calls == []
+
+    def test_propagates_json_sink_construction_error(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        factories: Factories,
+    ) -> None:
+        config = make_config(
+            json_enabled=True,
+        )
+
+        configure_loaded_config(
+            monkeypatch,
+            config,
+        )
+
+        expected_exception = OSError(
+            "cannot create JSON log file"
+        )
+
+        def failing_json_sink(
+            **_kwargs: Any,
+        ) -> object:
+            raise expected_exception
+
+        monkeypatch.setattr(
+            build_module,
+            "JsonSink",
+            failing_json_sink,
+        )
+
+        with pytest.raises(
+            OSError,
+        ) as exception_info:
+            build_monitaudit()
+
+        assert (
+            exception_info.value
+            is expected_exception
+        )
+        assert factories.monitaudit.calls == []
+
+
+class TestFileCyclePropagation:
+    def test_same_file_cycle_is_passed_to_file_and_json_sinks(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        factories: Factories,
+    ) -> None:
+        config = make_config(
+            file_enabled=True,
+            json_enabled=True,
+            file_cycle=25,
+        )
+
+        configure_loaded_config(
+            monkeypatch,
+            config,
+        )
+
+        build_monitaudit()
+
+        assert (
+            factories.file.calls[0][
+                "file_cycle"
+            ]
+            == 25
+        )
+
+        assert (
+            factories.json.calls[0][
+                "file_cycle"
+            ]
+            == 25
+        )
+
+    def test_file_cycle_is_not_passed_to_non_file_sinks(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        factories: Factories,
+    ) -> None:
+        config = make_config(
+            console_enabled=True,
+            delta_enabled=True,
+            delta_table="main.delta.local",
+            delta_path="output/delta",
+            file_cycle=25,
+        )
+
+        configure_loaded_config(
+            monkeypatch,
+            config,
+        )
+
+        spark = object()
+
+        monkeypatch.setattr(
+            build_module,
+            "get_spark_session",
+            lambda: spark,
+        )
+
+        build_monitaudit()
+
+        assert factories.console.calls == [
+            {
+                "parameters": True,
+            }
+        ]
+
+        assert factories.delta.calls == [
+            {
+                "table": "main.delta.local",
+                "path": "output/delta",
+                "spark": spark,
+                "is_databricks": False,
+            }
+        ]
 
 
 class TestDeltaSinkValidation:
@@ -647,7 +977,9 @@ class TestDeltaSinkValidation:
     ) -> None:
         config = make_config(
             delta_enabled=True,
-            delta_table="main.logging.application",
+            delta_table=(
+                "main.logging.application"
+            ),
             delta_path=None,
         )
 
@@ -684,7 +1016,9 @@ class TestDeltaSinkValidation:
             config,
         )
 
-        with pytest.raises(ValueError) as exception_info:
+        with pytest.raises(
+            ValueError,
+        ) as exception_info:
             build_monitaudit()
 
         assert (
@@ -713,7 +1047,10 @@ class TestDeltaSinkValidation:
 
         result = build_monitaudit()
 
-        assert result is factories.monitaudit.instance
+        assert (
+            result
+            is factories.monitaudit.instance
+        )
         assert factories.delta.calls == []
 
 
@@ -741,11 +1078,15 @@ class TestLocalDeltaSink:
         dbx_calls: list[None] = []
 
         def fake_get_spark_session() -> object:
-            local_calls.append(None)
+            local_calls.append(
+                None
+            )
             return local_spark
 
         def fake_run_dbx() -> object:
-            dbx_calls.append(None)
+            dbx_calls.append(
+                None
+            )
             return object()
 
         monkeypatch.setattr(
@@ -761,7 +1102,9 @@ class TestLocalDeltaSink:
 
         build_monitaudit()
 
-        assert local_calls == [None]
+        assert local_calls == [
+            None,
+        ]
         assert dbx_calls == []
 
         assert factories.delta.calls == [
@@ -776,12 +1119,12 @@ class TestLocalDeltaSink:
         ]
 
     @pytest.mark.parametrize(
-    "table",
-    [
-        "main.local",
-        "catalog.schema.local",
-        "main.logging.local",
-        "main.delta.local",
+        "table",
+        [
+            "main.local",
+            "catalog.schema.local",
+            "main.logging.local",
+            "main.delta.local",
         ],
     )
     def test_tables_ending_in_dot_local_use_local_spark(
@@ -824,11 +1167,16 @@ class TestLocalDeltaSink:
         build_monitaudit()
 
         assert (
-            factories.delta.calls[0]["is_databricks"]
+            factories.delta.calls[0][
+                "is_databricks"
+            ]
             is False
         )
+
         assert (
-            factories.delta.calls[0]["spark"]
+            factories.delta.calls[0][
+                "spark"
+            ]
             is local_spark
         )
 
@@ -912,7 +1260,9 @@ class TestDatabricksDeltaSink:
         run_dbx_calls: list[None] = []
 
         def fake_run_dbx() -> object:
-            run_dbx_calls.append(None)
+            run_dbx_calls.append(
+                None
+            )
             return spark
 
         monkeypatch.setattr(
@@ -923,13 +1273,21 @@ class TestDatabricksDeltaSink:
 
         build_monitaudit()
 
-        assert run_dbx_calls == [None]
+        assert run_dbx_calls == [
+            None,
+        ]
+
         assert (
-            factories.delta.calls[0]["spark"]
+            factories.delta.calls[0][
+                "spark"
+            ]
             is spark
         )
+
         assert (
-            factories.delta.calls[0]["is_databricks"]
+            factories.delta.calls[0][
+                "is_databricks"
+            ]
             is True
         )
 
@@ -964,10 +1322,15 @@ class TestDeltaSparkFailures:
             failing_get_spark_session,
         )
 
-        with pytest.raises(RuntimeError) as exception_info:
+        with pytest.raises(
+            RuntimeError,
+        ) as exception_info:
             build_monitaudit()
 
-        assert exception_info.value is expected_exception
+        assert (
+            exception_info.value
+            is expected_exception
+        )
         assert factories.delta.calls == []
         assert factories.monitaudit.calls == []
 
@@ -1000,10 +1363,15 @@ class TestDeltaSparkFailures:
             failing_run_dbx,
         )
 
-        with pytest.raises(RuntimeError) as exception_info:
+        with pytest.raises(
+            RuntimeError,
+        ) as exception_info:
             build_monitaudit()
 
-        assert exception_info.value is expected_exception
+        assert (
+            exception_info.value
+            is expected_exception
+        )
         assert factories.delta.calls == []
         assert factories.monitaudit.calls == []
 
@@ -1044,10 +1412,15 @@ class TestDeltaSparkFailures:
             failing_delta_sink,
         )
 
-        with pytest.raises(ValueError) as exception_info:
+        with pytest.raises(
+            ValueError,
+        ) as exception_info:
             build_monitaudit()
 
-        assert exception_info.value is expected_exception
+        assert (
+            exception_info.value
+            is expected_exception
+        )
         assert factories.monitaudit.calls == []
 
 
@@ -1064,6 +1437,7 @@ class TestSinkSelection:
             delta_enabled=True,
             delta_table="main.delta.local",
             delta_path="output/delta",
+            file_cycle=20,
         )
 
         configure_loaded_config(
@@ -1101,6 +1475,19 @@ class TestSinkSelection:
             "sink_failure_mode": "continue",
         }
 
+        assert (
+            factories.file.calls[0][
+                "file_cycle"
+            ]
+            == 20
+        )
+        assert (
+            factories.json.calls[0][
+                "file_cycle"
+            ]
+            == 20
+        )
+
     @pytest.mark.parametrize(
         (
             "console_enabled",
@@ -1119,19 +1506,25 @@ class TestSinkSelection:
                 True,
                 False,
                 False,
-                ["ConsoleSink"],
+                [
+                    "ConsoleSink",
+                ],
             ),
             (
                 False,
                 True,
                 False,
-                ["FileSink"],
+                [
+                    "FileSink",
+                ],
             ),
             (
                 False,
                 False,
                 True,
-                ["JsonSink"],
+                [
+                    "JsonSink",
+                ],
             ),
             (
                 True,
@@ -1198,7 +1591,9 @@ class TestSinkSelection:
             factories.monitaudit.calls[0]
         )
 
-        constructed_sinks = monitaudit_args[2:]
+        constructed_sinks = (
+            monitaudit_args[2:]
+        )
 
         assert [
             sink.sink_type
@@ -1262,7 +1657,10 @@ class TestSparkCallIsolation:
 
         result = build_monitaudit()
 
-        assert result is factories.monitaudit.instance
+        assert (
+            result
+            is factories.monitaudit.instance
+        )
 
     def test_only_one_spark_helper_is_called_for_local_delta(
         self,

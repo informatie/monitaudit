@@ -1,4 +1,4 @@
-# tests/models/test_sinks.py
+# tests/models/test_model_sinks.py
 
 from __future__ import annotations
 
@@ -149,10 +149,7 @@ class TestLoggingSettingsDefaults:
 
         assert settings.level == "INFO"
         assert settings.timer is True
-        assert (
-            settings.parameters
-            is True
-        )
+        assert settings.parameters is True
         assert (
             settings.max_parameter_length
             == 1000
@@ -161,6 +158,7 @@ class TestLoggingSettingsDefaults:
             settings.sink_failure_mode
             == "continue"
         )
+        assert settings.file_cycle == 10
 
     def test_expected_fields(
         self,
@@ -173,6 +171,7 @@ class TestLoggingSettingsDefaults:
             "parameters",
             "max_parameter_length",
             "sink_failure_mode",
+            "file_cycle",
         }
 
 
@@ -246,10 +245,7 @@ class TestLoggingBooleans:
             timer=timer,
         )
 
-        assert (
-            settings.timer
-            is timer
-        )
+        assert settings.timer is timer
 
     @pytest.mark.parametrize(
         "parameters",
@@ -266,10 +262,7 @@ class TestLoggingBooleans:
             parameters=parameters,
         )
 
-        assert (
-            settings.parameters
-            is parameters
-        )
+        assert settings.parameters is parameters
 
 
 class TestMaximumParameterLength:
@@ -359,6 +352,140 @@ class TestMaximumParameterLength:
         )
 
 
+class TestFileCycle:
+    def test_default_is_ten_days(
+        self,
+    ) -> None:
+        settings = LoggingSettings()
+
+        assert settings.file_cycle == 10
+
+    @pytest.mark.parametrize(
+        "value",
+        [
+            1,
+            2,
+            7,
+            10,
+            30,
+            90,
+        ],
+    )
+    def test_accepts_valid_integer_days(
+        self,
+        value: int,
+    ) -> None:
+        settings = LoggingSettings(
+            file_cycle=value,
+        )
+
+        assert settings.file_cycle == value
+
+    def test_minimum_boundary_is_one_day(
+        self,
+    ) -> None:
+        settings = LoggingSettings(
+            file_cycle=1,
+        )
+
+        assert settings.file_cycle == 1
+
+    @pytest.mark.parametrize(
+        "value",
+        [
+            0,
+            -1,
+            -10,
+            -365,
+        ],
+    )
+    def test_rejects_zero_and_negative_values(
+        self,
+        value: int,
+    ) -> None:
+        with pytest.raises(
+            ValidationError,
+        ):
+            LoggingSettings(
+                file_cycle=value,
+            )
+
+    @pytest.mark.parametrize(
+        (
+            "value",
+            "expected",
+        ),
+        [
+            ("1", 1),
+            ("10", 10),
+            (1.0, 1),
+            (10.0, 10),
+            (True, 1),
+        ],
+    )
+    def test_coerces_compatible_values(
+        self,
+        value: object,
+        expected: int,
+    ) -> None:
+        settings = LoggingSettings(
+            file_cycle=value,  # type: ignore[arg-type]
+        )
+
+        assert settings.file_cycle == expected
+
+    @pytest.mark.parametrize(
+        "value",
+        [
+            "",
+            "invalid",
+            1.5,
+            10.5,
+            [],
+            {},
+        ],
+    )
+    def test_rejects_values_that_cannot_be_integer_days(
+        self,
+        value: object,
+    ) -> None:
+        with pytest.raises(
+            ValidationError,
+        ):
+            LoggingSettings(
+                file_cycle=value,  # type: ignore[arg-type]
+            )
+
+    def test_false_is_rejected_after_coercion_to_zero(
+        self,
+    ) -> None:
+        with pytest.raises(
+            ValidationError,
+        ):
+            LoggingSettings(
+                file_cycle=False,
+            )
+
+    def test_value_above_current_allowed_range_is_rejected(
+        self,
+    ) -> None:
+        with pytest.raises(
+            ValidationError,
+        ):
+            LoggingSettings(
+                file_cycle=365,
+            )
+
+    def test_custom_value_is_preserved(
+        self,
+    ) -> None:
+        settings = LoggingSettings(
+            file_cycle=30,
+        )
+
+        assert settings.file_cycle == 30
+
+
 class TestSinkFailureMode:
     @pytest.mark.parametrize(
         "mode",
@@ -406,32 +533,19 @@ class TestConsoleSinkSettings:
     def test_defaults(
         self,
     ) -> None:
-        settings = (
-            ConsoleSinkSettings()
-        )
+        settings = ConsoleSinkSettings()
 
-        assert (
-            settings.enabled
-            is True
-        )
-        assert (
-            settings.parameters
-            == ()
-        )
+        assert settings.enabled is True
+        assert settings.parameters == ()
 
     def test_can_be_disabled(
         self,
     ) -> None:
-        settings = (
-            ConsoleSinkSettings(
-                enabled=False,
-            )
+        settings = ConsoleSinkSettings(
+            enabled=False,
         )
 
-        assert (
-            settings.enabled
-            is False
-        )
+        assert settings.enabled is False
 
     def test_parameters_can_be_configured(
         self,
@@ -460,10 +574,7 @@ class TestConsoleSinkSettings:
             parameters=parameters,
         )
 
-        assert (
-            settings.parameters
-            == parameters
-        )
+        assert settings.parameters == parameters
 
     def test_extra_field_is_rejected(
         self,
@@ -484,10 +595,7 @@ class TestJsonSinkSettings:
             path="output/log.jsonl",
         )
 
-        assert (
-            settings.enabled
-            is False
-        )
+        assert settings.enabled is False
 
     def test_path_is_required(
         self,
@@ -504,10 +612,7 @@ class TestJsonSinkSettings:
             path="output/log.jsonl",
         )
 
-        assert (
-            settings.path
-            == "output/log.jsonl"
-        )
+        assert settings.path == "output/log.jsonl"
 
     def test_empty_path_is_rejected(
         self,
@@ -538,19 +643,24 @@ class TestJsonSinkSettings:
 
         assert settings.enabled is True
 
+    def test_expected_fields(
+        self,
+    ) -> None:
+        assert set(
+            JsonSinkSettings.model_fields
+        ) == {
+            "enabled",
+            "path",
+        }
+
 
 class TestDeltaSinkSettings:
     def test_defaults(
         self,
     ) -> None:
-        settings = (
-            DeltaSinkSettings()
-        )
+        settings = DeltaSinkSettings()
 
-        assert (
-            settings.enabled
-            is False
-        )
+        assert settings.enabled is False
         assert settings.table is None
         assert settings.path is None
 
@@ -563,10 +673,7 @@ class TestDeltaSinkSettings:
             path="output/delta",
         )
 
-        assert (
-            settings.enabled
-            is True
-        )
+        assert settings.enabled is True
         assert (
             settings.table
             == "main.logging.events"
@@ -625,6 +732,17 @@ class TestDeltaSinkSettings:
 
         assert settings.path is None
 
+    def test_expected_fields(
+        self,
+    ) -> None:
+        assert set(
+            DeltaSinkSettings.model_fields
+        ) == {
+            "enabled",
+            "table",
+            "path",
+        }
+
 
 class TestFileSinkSettings:
     def test_path_is_required(
@@ -642,14 +760,8 @@ class TestFileSinkSettings:
             path="output/application",
         )
 
-        assert (
-            settings.enabled
-            is False
-        )
-        assert (
-            settings.format
-            == "text"
-        )
+        assert settings.enabled is False
+        assert settings.format == "text"
         assert settings.delimiter == ";"
 
     def test_can_be_enabled(
@@ -678,10 +790,7 @@ class TestFileSinkSettings:
             format=format_value,  # type: ignore[arg-type]
         )
 
-        assert (
-            settings.format
-            == format_value
-        )
+        assert settings.format == format_value
 
     @pytest.mark.parametrize(
         "format_value",
@@ -723,10 +832,7 @@ class TestFileSinkSettings:
             delimiter=delimiter,
         )
 
-        assert (
-            settings.delimiter
-            == delimiter
-        )
+        assert settings.delimiter == delimiter
 
     @pytest.mark.parametrize(
         "delimiter",
@@ -767,18 +873,31 @@ class TestFileSinkSettings:
 
         assert settings.path == " "
 
+    def test_expected_fields(
+        self,
+    ) -> None:
+        assert set(
+            FileSinkSettings.model_fields
+        ) == {
+            "enabled",
+            "format",
+            "delimiter",
+            "path",
+        }
+
 
 class TestSinkSettings:
     def test_complete_sink_settings(
         self,
     ) -> None:
-        console = (
-            ConsoleSinkSettings()
-        )
+        console = ConsoleSinkSettings()
+
         json_sink = JsonSinkSettings(
             path="output/log.jsonl",
         )
+
         delta = DeltaSinkSettings()
+
         file_sink = FileSinkSettings(
             path="output/log",
         )
@@ -790,22 +909,10 @@ class TestSinkSettings:
             file_sink=file_sink,
         )
 
-        assert (
-            settings.console_sink
-            is console
-        )
-        assert (
-            settings.json_sink
-            is json_sink
-        )
-        assert (
-            settings.delta_sink
-            is delta
-        )
-        assert (
-            settings.file_sink
-            is file_sink
-        )
+        assert settings.console_sink is console
+        assert settings.json_sink is json_sink
+        assert settings.delta_sink is delta
+        assert settings.file_sink is file_sink
 
     @pytest.mark.parametrize(
         "missing_field",
@@ -881,10 +988,7 @@ class TestMonitauditConfig:
             config.application
             == "monitaudit-example"
         )
-        assert (
-            config.environment
-            == "dev"
-        )
+        assert config.environment == "dev"
         assert config.logging is logging
         assert config.sinks is sinks
 
@@ -1056,6 +1160,7 @@ class TestNestedValidation:
                         "parameters": True,
                         "max_parameter_length": 500,
                         "sink_failure_mode": "raise",
+                        "file_cycle": 30,
                     },
                     "sinks": {
                         "console_sink": {
@@ -1120,6 +1225,10 @@ class TestNestedValidation:
             is False
         )
         assert (
+            config.logging.parameters
+            is True
+        )
+        assert (
             config.logging.max_parameter_length
             == 500
         )
@@ -1128,11 +1237,88 @@ class TestNestedValidation:
             == "raise"
         )
         assert (
+            config.logging.file_cycle
+            == 30
+        )
+        assert (
             config.sinks.console_sink.parameters
             == (
                 "customer_id",
             )
         )
+        assert (
+            config.sinks.json_sink.enabled
+            is True
+        )
+        assert (
+            config.sinks.file_sink.format
+            == "csv"
+        )
+
+    def test_nested_logging_file_cycle_is_validated(
+        self,
+    ) -> None:
+        values = {
+            "application": "test",
+            "environment": "dev",
+            "logging": {
+                "file_cycle": 0,
+            },
+            "sinks": {
+                "console_sink": {},
+                "json_sink": {
+                    "path": "output/log.jsonl",
+                },
+                "delta_sink": {},
+                "file_sink": {
+                    "path": "output/log",
+                },
+            },
+        }
+
+        with pytest.raises(
+            ValidationError,
+        ) as exception_info:
+            monitauditConfig.model_validate(
+                values
+            )
+
+        assert any(
+            error["loc"]
+            == (
+                "logging",
+                "file_cycle",
+            )
+            for error
+            in exception_info.value.errors()
+        )
+
+    def test_nested_file_cycle_string_is_coerced(
+        self,
+    ) -> None:
+        values = {
+            "application": "test",
+            "environment": "dev",
+            "logging": {
+                "file_cycle": "30",
+            },
+            "sinks": {
+                "console_sink": {},
+                "json_sink": {
+                    "path": "output/log.jsonl",
+                },
+                "delta_sink": {},
+                "file_sink": {
+                    "path": "output/log",
+                },
+            },
+        }
+
+        config = monitauditConfig.model_validate(
+            values
+        )
+
+        assert config.logging.file_cycle == 30
 
     def test_nested_extra_field_is_rejected(
         self,
@@ -1187,7 +1373,34 @@ class TestSerialisation:
                 "parameters": True,
                 "max_parameter_length": 1000,
                 "sink_failure_mode": "continue",
+                "file_cycle": 10,
             }
+        )
+
+    def test_logging_settings_custom_file_cycle_model_dump(
+        self,
+    ) -> None:
+        settings = LoggingSettings(
+            file_cycle=30,
+        )
+
+        result = settings.model_dump()
+
+        assert result["file_cycle"] == 30
+
+    def test_coerced_file_cycle_serialises_as_integer(
+        self,
+    ) -> None:
+        settings = LoggingSettings(
+            file_cycle="30",  # type: ignore[arg-type]
+        )
+
+        result = settings.model_dump()
+
+        assert result["file_cycle"] == 30
+        assert isinstance(
+            result["file_cycle"],
+            int,
         )
 
     def test_complete_config_model_dump(
@@ -1211,6 +1424,10 @@ class TestSerialisation:
         assert (
             result["logging"]["level"]
             == "INFO"
+        )
+        assert (
+            result["logging"]["file_cycle"]
+            == 10
         )
         assert (
             result["sinks"][
@@ -1240,16 +1457,20 @@ class TestSerialisation:
             '"environment":"dev"'
             in result
         )
+        assert (
+            '"file_cycle":10'
+            in result
+        )
 
 
 class TestCurrentModelBoundaries:
     def test_file_model_allows_newline_delimiter(
         self,
     ) -> None:
-        """
-        FileSink itself rejects newline delimiters, but FileSinkSettings only
-        constrains delimiter length. This test records the current model
-        contract.
+        """Record the current delimiter model contract.
+
+        FileSink rejects newline delimiters, but FileSinkSettings only
+        constrains delimiter length.
         """
 
         settings = FileSinkSettings(
@@ -1258,17 +1479,15 @@ class TestCurrentModelBoundaries:
             delimiter="\n",
         )
 
-        assert (
-            settings.delimiter
-            == "\n"
-        )
+        assert settings.delimiter == "\n"
 
     def test_enabled_delta_sink_does_not_require_table_at_model_level(
         self,
     ) -> None:
-        """
-        The model allows enabled=True with table=None. Validation of that
-        combination currently occurs in build_monitaudit().
+        """Record the current enabled Delta sink model contract.
+
+        The model permits enabled=True with table=None. Validation of
+        that combination currently occurs in build_monitaudit().
         """
 
         settings = DeltaSinkSettings(
@@ -1277,10 +1496,7 @@ class TestCurrentModelBoundaries:
             path=None,
         )
 
-        assert (
-            settings.enabled
-            is True
-        )
+        assert settings.enabled is True
         assert settings.table is None
         assert settings.path is None
 
@@ -1303,3 +1519,32 @@ class TestCurrentModelBoundaries:
             FileSinkSettings(
                 enabled=False,
             )
+
+    def test_file_cycle_is_global_logging_configuration(
+        self,
+    ) -> None:
+        assert (
+            "file_cycle"
+            in LoggingSettings.model_fields
+        )
+        assert (
+            "file_cycle"
+            not in FileSinkSettings.model_fields
+        )
+        assert (
+            "file_cycle"
+            not in JsonSinkSettings.model_fields
+        )
+
+    def test_file_cycle_currently_uses_pydantic_coercion(
+        self,
+    ) -> None:
+        settings = LoggingSettings(
+            file_cycle="10",  # type: ignore[arg-type]
+        )
+
+        assert settings.file_cycle == 10
+        assert isinstance(
+            settings.file_cycle,
+            int,
+        )
