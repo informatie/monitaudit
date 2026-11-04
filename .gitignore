@@ -24,6 +24,7 @@ build/
 develop-eggs/
 dist/
 downloads/
+output/
 eggs/
 .eggs/
 parts/
@@ -89,7 +90,7 @@ examples/
 # ------------------------------------------------------------
 var/
 volume/
-
+output/*
 
 # ------------------------------------------------------------
 # Environment-specific runtime directories
