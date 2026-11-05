@@ -106,7 +106,7 @@ prod/
 .env
 .env.*
 !.env.example
-
+main*
 
 # ------------------------------------------------------------
 # MonitAudit runtime lock files

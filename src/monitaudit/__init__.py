@@ -11,15 +11,16 @@ from monitaudit.sinks import (
     FileSink,
     JsonSink,
 )
-from monitaudit.utilities.build_monitaudit import (
-    build_monitaudit,
-)
+from monitaudit.utilities.build_monitaudit import build_monitaudit
 
 
 def monitaudit_init(
     correlation_id: str | None = None,
 ) -> Monitaudit:
-    return build_monitaudit(correlation_id=correlation_id,)
+    return build_monitaudit(
+        correlation_id=correlation_id,
+    )
+
 
 __version__ = "1.2.5"
 
