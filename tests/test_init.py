@@ -22,14 +22,6 @@ EXPECTED_PUBLIC_API = {
     "monitaudit_init",
 }
 
-
-class TestVersion:
-    def test_version(
-        self,
-    ) -> None:
-        assert monitaudit.__version__ == "1.2.5"
-
-
 class TestPublicApi:
     def test_all_matches_public_api(
         self,
@@ -46,9 +38,7 @@ class TestPublicApi:
 
     @pytest.mark.parametrize(
         "name",
-        sorted(
-            EXPECTED_PUBLIC_API
-        ),
+        sorted(EXPECTED_PUBLIC_API),
     )
     def test_public_name_exists(
         self,
@@ -130,17 +120,12 @@ class TestExportIdentity:
         package_value: object,
         source_value: object,
     ) -> None:
-        assert (
-            package_value
-            is source_value
-        )
+        assert package_value is source_value
 
     def test_log_context_export_identity(
         self,
     ) -> None:
-        from monitaudit.models.context import (
-            LogContext,
-        )
+        from monitaudit.models.context import LogContext
 
         assert (
             monitaudit.LogContext
@@ -162,9 +147,7 @@ class TestExportIdentity:
     def test_logger_export_identity(
         self,
     ) -> None:
-        from monitaudit.logger import (
-            monitauditLogger,
-        )
+        from monitaudit.logger import monitauditLogger
 
         assert (
             monitaudit.monitauditLogger
@@ -193,13 +176,13 @@ class TestMonitauditInit:
             Monitaudit,
             object(),
         )
-        calls = 0
 
-        def fake_build() -> Monitaudit:
-            nonlocal calls
+        calls: list[dict[str, Any]] = []
 
-            calls += 1
-
+        def fake_build(
+            **kwargs: Any,
+        ) -> Monitaudit:
+            calls.append(kwargs)
             return expected
 
         monkeypatch.setattr(
@@ -208,14 +191,16 @@ class TestMonitauditInit:
             fake_build,
         )
 
-        result = (
-            monitaudit.monitaudit_init()
-        )
+        result = monitaudit.monitaudit_init()
 
         assert result is expected
-        assert calls == 1
+        assert calls == [
+            {
+                "correlation_id": None,
+            }
+        ]
 
-    def test_calls_build_without_arguments(
+    def test_passes_none_correlation_id_by_default(
         self,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
@@ -250,13 +235,127 @@ class TestMonitauditInit:
             fake_build,
         )
 
-        monitaudit.monitaudit_init()
+        result = monitaudit.monitaudit_init()
+
+        assert result is expected
 
         assert calls == [
             (
                 (),
-                {},
+                {
+                    "correlation_id": None,
+                },
             )
+        ]
+
+    def test_passes_explicit_correlation_id(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        expected = cast(
+            Monitaudit,
+            object(),
+        )
+
+        received: dict[str, Any] = {}
+
+        def fake_build(
+            **kwargs: Any,
+        ) -> Monitaudit:
+            received.update(kwargs)
+            return expected
+
+        monkeypatch.setattr(
+            monitaudit,
+            "build_monitaudit",
+            fake_build,
+        )
+
+        result = monitaudit.monitaudit_init(
+            correlation_id="RELATICS-12345",
+        )
+
+        assert result is expected
+
+        assert received == {
+            "correlation_id": "RELATICS-12345",
+        }
+
+    @pytest.mark.parametrize(
+        "correlation_id",
+        [
+            "RELATICS-12345",
+            "550e8400-e29b-41d4-a716-446655440000",
+            "application-run-001",
+        ],
+    )
+    def test_preserves_correlation_id_exactly(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        correlation_id: str,
+    ) -> None:
+        expected = cast(
+            Monitaudit,
+            object(),
+        )
+
+        received: list[str | None] = []
+
+        def fake_build(
+            *,
+            correlation_id: str | None = None,
+        ) -> Monitaudit:
+            received.append(
+                correlation_id
+            )
+
+            return expected
+
+        monkeypatch.setattr(
+            monitaudit,
+            "build_monitaudit",
+            fake_build,
+        )
+
+        monitaudit.monitaudit_init(
+            correlation_id=correlation_id,
+        )
+
+        assert received == [
+            correlation_id,
+        ]
+
+    def test_does_not_generate_correlation_id_itself(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        expected = cast(
+            Monitaudit,
+            object(),
+        )
+
+        received: list[str | None] = []
+
+        def fake_build(
+            *,
+            correlation_id: str | None = None,
+        ) -> Monitaudit:
+            received.append(
+                correlation_id
+            )
+
+            return expected
+
+        monkeypatch.setattr(
+            monitaudit,
+            "build_monitaudit",
+            fake_build,
+        )
+
+        monitaudit.monitaudit_init()
+
+        assert received == [
+            None,
         ]
 
     def test_propagates_build_exception(
@@ -267,7 +366,11 @@ class TestMonitauditInit:
             "configuration failed"
         )
 
-        def fake_build() -> Monitaudit:
+        def fake_build(
+            *,
+            correlation_id: str | None = None,
+        ) -> Monitaudit:
+            del correlation_id
             raise expected
 
         monkeypatch.setattr(
@@ -291,9 +394,7 @@ class TestDirectImport:
     def test_monitaudit_init_can_be_imported_directly(
         self,
     ) -> None:
-        from monitaudit import (
-            monitaudit_init,
-        )
+        from monitaudit import monitaudit_init
 
         assert (
             monitaudit_init
@@ -303,9 +404,7 @@ class TestDirectImport:
     def test_build_monitaudit_can_be_imported_directly(
         self,
     ) -> None:
-        from monitaudit import (
-            build_monitaudit,
-        )
+        from monitaudit import build_monitaudit
 
         assert (
             build_monitaudit

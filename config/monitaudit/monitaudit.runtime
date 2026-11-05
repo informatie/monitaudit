@@ -17,7 +17,6 @@ monitaudit:
           - cust_nummer
           - order_code
           - order_name
-          - jan
 
   # -------------------------------------------------------------------------
   # ENVIRONMENT-SPECIFIC SETTINGS

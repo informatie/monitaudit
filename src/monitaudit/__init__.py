@@ -22,7 +22,7 @@ def monitaudit_init(
     )
 
 
-__version__ = "1.2.5"
+__version__ = "1.3.0"
 
 
 __all__ = [

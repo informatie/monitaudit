@@ -315,6 +315,19 @@ The following examples show the complete Monitaudit configuration files.
 # The exact values accepted by the installed MonitAudit version should match the
 # configuration model used by that release.
 #
+# ------------------------------------------------------------------------------
+#
+# file_cycle
+# -----------------
+# How long
+#
+# Example:
+#
+#     logging.sink_failure_mode=continue
+#
+# The exact values accepted by the installed MonitAudit version should match the
+# configuration model used by that release.
+#
 # ==============================================================================
 
 logging.level=INFO
@@ -322,6 +335,7 @@ logging.timer=true
 logging.parameters=true
 logging.max_parameter_length=1000
 logging.sink_failure_mode=continue
+logging.file_cycle=10
 
 
 # ==============================================================================
@@ -366,7 +380,7 @@ logging.sink_failure_mode=continue
 #
 # ==============================================================================
 
-console_sink.enabled=true
+console_sink.enabled=false
 
 
 # ==============================================================================
@@ -449,7 +463,7 @@ delta_sink.enabled=false
 #       application: example-application
 #
 #       logging:
-#         level: DEBUG
+#         level: INFO
 #         timer: true
 #         parameters: true
 #         max_parameter_length: 1000
@@ -457,20 +471,16 @@ delta_sink.enabled=false
 #
 #       sinks:
 #         console_sink:
-#           enabled: true
+#           enabled: false
 #
 #         json_sink:
-#           enabled: true
-#           path: output/json_sink/application.jsonl
+#           enabled: false
 #
 #         file_sink:
-#           enabled: true
-#           path: output/file_sink/application.log
+#           enabled: false
 #
 #         delta_sink:
 #           enabled: false
-#           table: main.logging.application
-#           path: output/delta_sink/application
 #
 # ==============================================================================
 # ENVIRONMENT SELECTION
