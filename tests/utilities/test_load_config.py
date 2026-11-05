@@ -866,7 +866,7 @@ class TestLoadProperties:
             "! comment\n"
             "logging.level=INFO\n"
             "logging.timer=true\n"
-            "logging.parameters=false\n"
+            "logging.show_parameters=false\n"
             "logging.max_parameter_length=1000\n"
             "value=left=right\n"
             "sinks.file_sink.path=output/log\n",
@@ -1642,7 +1642,7 @@ class TestLoadConfig:
             tmp_path / "monitaudit.properties",
             "logging.level=INFO\n"
             "logging.timer=true\n"
-            "logging.parameters=false\n"
+            "logging.show_parameters=false\n"
             "logging.max_parameter_length=1000\n"
             "logging.sink_failure_mode=continue\n",
         )

@@ -76,7 +76,7 @@ def build_monitaudit(
         *sinks,
         timer=config.logging.timer,
         correlation_id = correlation_id,
-        parameters=config.logging.parameters,
+        show_parameters=config.logging.show_parameters,
         max_parameter_length=config.logging.max_parameter_length,
         sink_failure_mode=config.logging.sink_failure_mode,
     )

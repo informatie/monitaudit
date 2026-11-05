@@ -52,7 +52,7 @@ class Monitaudit:
         run_id: str | None = None,
         context_attributes: dict[str, Any] | None = None,
         timer: bool = True,
-        parameters: bool = True,
+        show_parameters: bool = True,
         max_parameter_length: int = 1000,
         sink_failure_mode: SinkFailureMode = "continue",
     ) -> None:
@@ -86,7 +86,7 @@ class Monitaudit:
             )
 
         self.timer = timer
-        self.parameters = parameters
+        self.show_parameters = show_parameters
         self.max_parameter_length = max_parameter_length
 
         self.logger = monitauditLogger(
@@ -196,7 +196,7 @@ class Monitaudit:
             *args: P.args,
             **kwargs: P.kwargs,
         ) -> R:
-            if self.parameters:
+            if self.show_parameters:
                 bound = signature.bind(
                     *args,
                     **kwargs,

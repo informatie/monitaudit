@@ -1225,7 +1225,7 @@ class TestNestedValidation:
             is False
         )
         assert (
-            config.logging.parameters
+            config.logging.show_parameters
             is True
         )
         assert (

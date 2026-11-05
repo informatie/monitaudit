@@ -44,7 +44,7 @@ class ConfigModel(BaseModel):
 class LoggingSettings(ConfigModel):
     level: LogLevel = "INFO"
     timer: bool = True
-    parameters: bool = True
+    show_parameters: bool = True
 
     file_cycle: int = Field(
         default=10,
