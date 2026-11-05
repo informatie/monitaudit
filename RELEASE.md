@@ -9,7 +9,7 @@ MonitAudit follows Semantic Versioning:
 - **PATCH** – backwards-compatible fixes, improvements and maintenance
 
 ---ß
-## 1.3.0 - ????-??-??
+## 1.3.0 - 2026-11-05
 
 ### Changed
 
