@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Sequence
 from threading import Lock
 
 from monitaudit.constants import (
@@ -24,19 +25,24 @@ class ConsoleSink(Sink):
         self,
         indent_size: int = 4,
         location_width: int = 30,
-        parameters: list[str] | None = None,
+        parameters: Sequence[str] | None = None,
     ) -> None:
         if indent_size < 0:
-            raise ValueError("indent_size must be 0 or greater.")
+            raise ValueError(
+                "indent_size must be 0 or greater."
+            )
 
         if location_width < 0:
-            raise ValueError("location_width must be 0 or greater.")
+            raise ValueError(
+                "location_width must be 0 or greater."
+            )
 
         self.indent_size = indent_size
         self.location_width = location_width
         self._depths: dict[str, int] = {}
         self._lock = Lock()
-        self.parameters = tuple(
+
+        self.parameters: tuple[str, ...] = tuple(
             parameters or ()
         )
 

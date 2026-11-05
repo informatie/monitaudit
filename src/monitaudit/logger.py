@@ -26,33 +26,39 @@ from monitaudit.models.log import (
 from monitaudit.sinks.base import Sink
 from monitaudit.utilities.json_safe import json_safe_dict
 
+# UP040. vanf python 3.12 anders, nu nog niet fout
 SinkFailureMode: TypeAlias = Literal[
     "continue",
     "raise",
 ]
 
+# UP040. vanf python 3.12 anders, nu nog niet fout
 StandardLog: TypeAlias = (
     DebugLog
     | InfoLog
     | WarningLog
 )
 
+# UP040. vanf python 3.12 anders, nu nog niet fout
 StandardLogType: TypeAlias = (
     type[DebugLog]
     | type[InfoLog]
     | type[WarningLog]
 )
 
+# UP040. vanf python 3.12 anders, nu nog niet fout
 ExceptionLog: TypeAlias = (
     ErrorLog
     | CriticalLog
 )
 
+# UP040. vanf python 3.12 anders, nu nog niet fout
 ExceptionLogType: TypeAlias = (
     type[ErrorLog]
     | type[CriticalLog]
 )
 
+# UP040. vanf python 3.12 anders, nu nog niet fout
 SinkFailure: TypeAlias = tuple[
     Sink,
     Exception,
@@ -76,8 +82,8 @@ class monitauditLogger:
         *sinks: Sink,
         sink_failure_mode: SinkFailureMode = "continue",
     ) -> None:
-        self._validate_context(context)
-        self._validate_sinks(sinks)
+        #self._validate_context(context)
+        #self._validate_sinks(sinks)
         self._validate_sink_failure_mode(
             sink_failure_mode
         )
@@ -330,7 +336,7 @@ class monitauditLogger:
         self._write(log)
 
         return log
-
+    """
     @staticmethod
     def _validate_context(
         context: LogContext,
@@ -351,7 +357,7 @@ class monitauditLogger:
                     "All sinks must inherit from Sink; "
                     f"received {type(sink).__name__}."
                 )
-
+    """
     @staticmethod
     def _validate_sink_failure_mode(
         sink_failure_mode: str,

@@ -1,10 +1,11 @@
 # src/monitaudit/__init__.py
+
 from __future__ import annotations
 
-from .logger import monitauditLogger
-from .models.context import LogContext
-from .models.monitaudit import Monitaudit
-from .sinks import (
+from monitaudit.logger import monitauditLogger
+from monitaudit.models.context import LogContext
+from monitaudit.models.monitaudit import Monitaudit
+from monitaudit.sinks import (
     ConsoleSink,
     DeltaSink,
     FileSink,
@@ -12,10 +13,17 @@ from .sinks import (
 )
 from monitaudit.utilities.build_monitaudit import build_monitaudit
 
-def monitaudit_init():
-    return build_monitaudit()
 
-__version__ = "1.2.5"
+def monitaudit_init(
+    correlation_id: str | None = None,
+) -> Monitaudit:
+    return build_monitaudit(
+        correlation_id=correlation_id,
+    )
+
+
+__version__ = "1.3.0"
+
 
 __all__ = [
     "ConsoleSink",
@@ -25,4 +33,6 @@ __all__ = [
     "LogContext",
     "Monitaudit",
     "monitauditLogger",
+    "build_monitaudit",
+    "monitaudit_init",
 ]
