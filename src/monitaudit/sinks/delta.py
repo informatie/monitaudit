@@ -20,7 +20,6 @@ from pyspark.sql.types import (
 from monitaudit.models.base import BaseLog
 from monitaudit.sinks.base import Sink
 
-
 STRING_MAP = MapType(
     StringType(),
     StringType(),

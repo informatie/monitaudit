@@ -46,6 +46,7 @@ dependencies = [
     "delta-spark>=4.4.1",
     "pyspark[sql]>=4.2.0",
     "types-pyyaml>=6.0.12.20261030",
+    "structlog>=26.1.0",
 ]
 
 [project.scripts]

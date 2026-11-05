@@ -24,6 +24,7 @@ build/
 develop-eggs/
 dist/
 downloads/
+output/
 eggs/
 .eggs/
 parts/
@@ -89,7 +90,7 @@ examples/
 # ------------------------------------------------------------
 var/
 volume/
-
+output/*
 
 # ------------------------------------------------------------
 # Environment-specific runtime directories
@@ -105,7 +106,7 @@ prod/
 .env
 .env.*
 !.env.example
-
+main*
 
 # ------------------------------------------------------------
 # MonitAudit runtime lock files
@@ -141,3 +142,4 @@ _delta_log/
 # ------------------------------------------------------------
 .DS_Store
 Thumbs.db
+main.py

@@ -2,16 +2,14 @@
 
 from __future__ import annotations
 
-from datetime import datetime
-from enum import Enum
-from pathlib import Path
-from typing import Any, cast
-from uuid import UUID, uuid4
+import builtins
+from typing import Any
 
 import pytest
 
+import monitaudit.logger as logger_module
 from monitaudit.logger import (
-    SinkFailureMode,
+    _INTERNAL_CALLER_MODULES,
     monitauditLogger,
 )
 from monitaudit.models.base import BaseLog
@@ -26,1330 +24,1622 @@ from monitaudit.models.log import (
 from monitaudit.sinks.base import Sink
 
 
-class MemorySink(Sink):
-    """Sink that stores every received log record."""
+class RecordingSink(Sink):
+    """Sink that records every received log."""
 
     def __init__(self) -> None:
         self.logs: list[BaseLog] = []
 
-    def write(
-        self,
-        log: BaseLog,
-    ) -> None:
+    def write(self, log: BaseLog) -> None:
         self.logs.append(log)
 
 
 class FailingSink(Sink):
-    """Sink used to verify sink failure isolation."""
+    """Sink that records attempts and then raises an exception."""
 
     def __init__(
         self,
-        message: str = "sink failed",
+        exception: Exception | None = None,
     ) -> None:
-        self.message = message
-        self.calls = 0
-
-    def write(
-        self,
-        log: BaseLog,
-    ) -> None:
-        self.calls += 1
-
-        raise RuntimeError(
-            self.message
+        self.exception = exception or RuntimeError(
+            "sink write failed"
         )
+        self.logs: list[BaseLog] = []
+        self.write_count = 0
+
+    def write(self, log: BaseLog) -> None:
+        self.write_count += 1
+        self.logs.append(log)
+        raise self.exception
 
 
-class ExampleEnum(Enum):
-    FIRST = "first"
+class AnotherFailingSink(Sink):
+    """Second failing sink used to verify failure aggregation."""
+
+    def __init__(self) -> None:
+        self.logs: list[BaseLog] = []
+        self.write_count = 0
+
+    def write(self, log: BaseLog) -> None:
+        self.write_count += 1
+        self.logs.append(log)
+        raise ValueError("second sink failure")
 
 
-class ExampleObject:
-    def __repr__(self) -> str:
-        return "ExampleObject()"
+class FaultyStringException(Exception):
+    """Exception whose string conversion fails."""
 
-
-class BrokenStringException(Exception):
     def __str__(self) -> str:
-        raise RuntimeError(
-            "broken exception string"
-        )
+        raise RuntimeError("broken exception __str__")
 
 
 @pytest.fixture
 def context() -> LogContext:
-    return LogContext(
-        application="monitaudit-test",
-        environment="dev",
-        correlation_id="correlation-123",
-        run_id="run-456",
+    """
+    Create a minimal valid LogContext without depending on its required
+    application-specific fields.
+
+    LogContext validation is tested in its own model test file. These tests
+    focus on logger behaviour.
+    """
+
+    model_construct = getattr(
+        LogContext,
+        "model_construct",
+        None,
     )
+
+    if callable(model_construct):
+        return model_construct()
+
+    construct = getattr(
+        LogContext,
+        "construct",
+        None,
+    )
+
+    if callable(construct):
+        return construct()
+
+    return object.__new__(LogContext)
 
 
 @pytest.fixture
-def sink() -> MemorySink:
-    return MemorySink()
+def recording_sink() -> RecordingSink:
+    return RecordingSink()
 
 
 @pytest.fixture
 def logger(
     context: LogContext,
-    sink: MemorySink,
+    recording_sink: RecordingSink,
 ) -> monitauditLogger:
     return monitauditLogger(
         context,
-        sink,
+        recording_sink,
     )
 
 
-def test_logger_stores_context(
-    context: LogContext,
-) -> None:
-    logger = monitauditLogger(
-        context
-    )
+def raise_value_error() -> None:
+    raise ValueError("invalid value")
 
-    assert logger.context is context
 
-
-def test_logger_stores_sinks_as_tuple(
-    context: LogContext,
-) -> None:
-    first = MemorySink()
-    second = MemorySink()
-
-    logger = monitauditLogger(
-        context,
-        first,
-        second,
-    )
-
-    assert logger.sinks == (
-        first,
-        second,
-    )
-
-
-def test_logger_defaults_to_continue_mode(
-    context: LogContext,
-) -> None:
-    logger = monitauditLogger(
-        context
-    )
-
-    assert (
-        logger.sink_failure_mode
-        == "continue"
-    )
-
-
-def test_invalid_context_raises_type_error() -> None:
-    invalid_context = cast(
-        LogContext,
-        object(),
-    )
-
-    with pytest.raises(
-        TypeError,
-        match="context must be a LogContext instance",
-    ):
-        monitauditLogger(
-            invalid_context
-        )
-
-
-def test_invalid_sink_raises_type_error(
-    context: LogContext,
-) -> None:
-    invalid_sink = cast(
-        Sink,
-        object(),
-    )
-
-    with pytest.raises(
-        TypeError,
-        match="All sinks must inherit from Sink",
-    ):
-        monitauditLogger(
-            context,
-            invalid_sink,
-        )
-
-
-def test_invalid_sink_failure_mode_raises_value_error(
-    context: LogContext,
-) -> None:
-    invalid_mode = cast(
-        SinkFailureMode,
-        "invalid",
-    )
-
-    with pytest.raises(
-        ValueError,
-        match="sink_failure_mode must be",
-    ):
-        monitauditLogger(
-            context,
-            sink_failure_mode=invalid_mode,
-        )
-
-
-def test_debug_creates_debug_log(
-    logger: monitauditLogger,
-    sink: MemorySink,
-) -> None:
-    log = logger.debug(
-        "debug message",
-        module="test_module",
-        function="test_function",
-    )
-
-    assert isinstance(
-        log,
-        DebugLog,
-    )
-
-    assert log.level == "DEBUG"
-    assert log.message == "debug message"
-    assert sink.logs == [log]
-
-
-def test_info_creates_info_log(
-    logger: monitauditLogger,
-    sink: MemorySink,
-) -> None:
-    log = logger.info(
-        "info message",
-        module="test_module",
-        function="test_function",
-    )
-
-    assert isinstance(
-        log,
-        InfoLog,
-    )
-
-    assert log.level == "INFO"
-    assert log.message == "info message"
-    assert sink.logs == [log]
-
-
-def test_warning_creates_warning_log(
-    logger: monitauditLogger,
-    sink: MemorySink,
-) -> None:
-    log = logger.warning(
-        "warning message",
-        module="test_module",
-        function="test_function",
-    )
-
-    assert isinstance(
-        log,
-        WarningLog,
-    )
-
-    assert log.level == "WARNING"
-    assert log.message == "warning message"
-    assert sink.logs == [log]
-
-
-def test_error_creates_error_log(
-    logger: monitauditLogger,
-    sink: MemorySink,
-) -> None:
-    log = logger.error(
-        "error message",
-        module="test_module",
-        function="test_function",
-    )
-
-    assert isinstance(
-        log,
-        ErrorLog,
-    )
-
-    assert log.level == "ERROR"
-    assert log.message == "error message"
-    assert sink.logs == [log]
-
-
-def test_critical_creates_critical_log(
-    logger: monitauditLogger,
-    sink: MemorySink,
-) -> None:
-    log = logger.critical(
-        "critical message",
-        module="test_module",
-        function="test_function",
-    )
-
-    assert isinstance(
-        log,
-        CriticalLog,
-    )
-
-    assert log.level == "CRITICAL"
-    assert log.message == "critical message"
-    assert sink.logs == [log]
-
-
-def test_common_log_fields_are_preserved(
-    logger: monitauditLogger,
-) -> None:
-    log = logger.info(
-        "message",
-        call_id="call-123",
-        parent_call_id="parent-456",
-        parameters={
-            "number": 10,
-            "text": "hello",
-        },
-        duration_ms=12.5,
-        module="my.module",
-        function="my_function",
-        event="example",
-        item_count=5,
-    )
-
-    assert log.message == "message"
-    assert log.call_id == "call-123"
-
-    assert (
-        log.parent_call_id
-        == "parent-456"
-    )
-
-    assert log.duration_ms == 12.5
-    assert log.module == "my.module"
-
-    assert (
-        log.function
-        == "my_function"
-    )
-
-    assert log.parameters == {
-        "number": 10,
-        "text": "hello",
-    }
-
-    assert log.attributes == {
-        "event": "example",
-        "item_count": 5,
-    }
-
-
-def test_logger_uses_original_context(
-    logger: monitauditLogger,
-    context: LogContext,
-) -> None:
-    log = logger.info(
-        "context test",
-        module="test_module",
-        function="test_function",
-    )
-
-    assert log.context is context
-
-    assert (
-        log.context.application
-        == "monitaudit-test"
-    )
-
-    assert (
-        log.context.environment
-        == "dev"
-    )
-
-    assert (
-        log.context.correlation_id
-        == "correlation-123"
-    )
-
-    assert (
-        log.context.run_id
-        == "run-456"
-    )
-
-
-def test_logger_writes_to_all_sinks(
-    context: LogContext,
-) -> None:
-    first_sink = MemorySink()
-    second_sink = MemorySink()
-
-    logger = monitauditLogger(
-        context,
-        first_sink,
-        second_sink,
-    )
-
-    log = logger.info(
-        "multi sink",
-        module="test_module",
-        function="test_function",
-    )
-
-    assert first_sink.logs == [log]
-    assert second_sink.logs == [log]
-
-
-def test_logger_without_sinks_returns_log(
-    context: LogContext,
-) -> None:
-    logger = monitauditLogger(
-        context
-    )
-
-    log = logger.info(
-        "no sinks",
-        module="test_module",
-        function="test_function",
-    )
-
-    assert isinstance(
-        log,
-        InfoLog,
-    )
-
-    assert log.message == "no sinks"
-
-
-def test_same_log_instance_is_sent_to_every_sink(
-    context: LogContext,
-) -> None:
-    first_sink = MemorySink()
-    second_sink = MemorySink()
-
-    logger = monitauditLogger(
-        context,
-        first_sink,
-        second_sink,
-    )
-
-    log = logger.debug(
-        "identity test",
-        module="test_module",
-        function="test_function",
-    )
-
-    assert first_sink.logs[0] is log
-    assert second_sink.logs[0] is log
-
-
-def test_prepare_parameters_none_returns_empty_dict() -> None:
-    result = (
-        monitauditLogger._prepare_parameters(
-            None
-        )
-    )
-
-    assert result == {}
-
-
-def test_prepare_parameters_empty_returns_empty_dict() -> None:
-    result = (
-        monitauditLogger._prepare_parameters(
-            {}
-        )
-    )
-
-    assert result == {}
-
-
-def test_prepare_parameters_are_json_safe() -> None:
-    identifier = uuid4()
-
-    result = (
-        monitauditLogger._prepare_parameters(
-            {
-                "path": Path(
-                    "/tmp/example"
-                ),
-                "uuid": identifier,
-                "enum": ExampleEnum.FIRST,
-                "items": {
-                    1,
-                    2,
-                    3,
-                },
-                "object": ExampleObject(),
-            }
-        )
-    )
-
-    assert (
-        result["path"]
-        == "/tmp/example"
-    )
-
-    assert (
-        result["uuid"]
-        == str(identifier)
-    )
-
-    assert (
-        result["enum"]
-        == "first"
-    )
-
-    items = result["items"]
-
-    assert isinstance(
-        items,
-        list,
-    )
-
-    assert sorted(items) == [
-        1,
-        2,
-        3,
-    ]
-
-    assert (
-        result["object"]
-        == "ExampleObject()"
-    )
-
-
-def test_prepare_parameters_does_not_reuse_input_dict() -> None:
-    source: dict[str, Any] = {
-        "value": "original",
-    }
-
-    result = (
-        monitauditLogger._prepare_parameters(
-            source
-        )
-    )
-
-    assert result is not source
-
-    assert result == {
-        "value": "original",
-    }
-
-
-def test_prepare_attributes_empty_returns_empty_dict() -> None:
-    result = (
-        monitauditLogger._prepare_attributes(
-            {}
-        )
-    )
-
-    assert result == {}
-
-
-def test_prepare_attributes_are_json_safe() -> None:
-    identifier = uuid4()
-
-    result = (
-        monitauditLogger._prepare_attributes(
-            {
-                "path": Path(
-                    "/tmp/example"
-                ),
-                "uuid": identifier,
-                "enum": ExampleEnum.FIRST,
-                "nested": {
-                    "path": Path(
-                        "/nested"
-                    ),
-                },
-            }
-        )
-    )
-
-    assert result == {
-        "path": "/tmp/example",
-        "uuid": str(identifier),
-        "enum": "first",
-        "nested": {
-            "path": "/nested",
-        },
-    }
-
-
-def test_prepare_attributes_supports_datetime() -> None:
-    value = datetime(
-        2026,
-        10,
-        23,
-        12,
-        30,
-        15,
-    )
-
-    result = (
-        monitauditLogger._prepare_attributes(
-            {
-                "timestamp": value,
-            }
-        )
-    )
-
-    assert result == {
-        "timestamp": value.isoformat(),
-    }
-
-
-def test_prepare_attributes_does_not_reuse_input_dict() -> None:
-    source: dict[str, Any] = {
-        "event": "example",
-    }
-
-    result = (
-        monitauditLogger._prepare_attributes(
-            source
-        )
-    )
-
-    assert result is not source
-
-    assert result == {
-        "event": "example",
-    }
-
-
-def test_json_safe_attributes_are_forwarded_to_sink(
-    logger: monitauditLogger,
-    sink: MemorySink,
-) -> None:
-    identifier = UUID(
-        "12345678-1234-5678-1234-567812345678"
-    )
-
-    log = logger.info(
-        "attributes",
-        module="test_module",
-        function="test_function",
-        path=Path(
-            "/tmp/example"
-        ),
-        identifier=identifier,
-        values={
-            1,
-            2,
-            3,
-        },
-    )
-
-    assert sink.logs == [log]
-
-    assert (
-        log.attributes["path"]
-        == "/tmp/example"
-    )
-
-    assert (
-        log.attributes["identifier"]
-        == "12345678-1234-5678-1234-567812345678"
-    )
-
-    values = log.attributes["values"]
-
-    assert isinstance(
-        values,
-        list,
-    )
-
-    assert sorted(values) == [
-        1,
-        2,
-        3,
-    ]
-
-
-def test_json_safe_parameters_are_forwarded_to_sink(
-    logger: monitauditLogger,
-    sink: MemorySink,
-) -> None:
-    log = logger.info(
-        "parameters",
-        module="test_module",
-        function="test_function",
-        parameters={
-            "path": Path(
-                "/tmp/example"
-            ),
-            "enum": ExampleEnum.FIRST,
-            "nested": {
-                "values": {
-                    1,
-                    2,
-                },
-            },
-        },
-    )
-
-    assert sink.logs == [log]
-
-    assert (
-        log.parameters["path"]
-        == "/tmp/example"
-    )
-
-    assert (
-        log.parameters["enum"]
-        == "first"
-    )
-
-    nested_value = log.parameters[
-        "nested"
-    ]
-
-    assert isinstance(
-        nested_value,
-        dict,
-    )
-
-    values = nested_value[
-        "values"
-    ]
-
-    assert isinstance(
-        values,
-        list,
-    )
-
-    assert sorted(values) == [
-        1,
-        2,
-    ]
-
-
-def test_serialize_exception_none() -> None:
-    result = (
-        monitauditLogger._serialize_exception(
-            None
-        )
-    )
-
-    assert result == (
-        None,
-        None,
-        [],
-    )
-
-
-def test_serialize_exception() -> None:
+def capture_exception() -> ValueError:
     try:
-        raise ValueError(
-            "something went wrong"
+        raise_value_error()
+    except ValueError as exception:
+        return exception
+
+    raise AssertionError("Expected ValueError was not raised")
+
+
+class TestInitialisation:
+    def test_initialises_with_context_and_no_sinks(
+        self,
+        context: LogContext,
+    ) -> None:
+        logger = monitauditLogger(context)
+
+        assert logger.context is context
+        assert logger.sinks == ()
+        assert logger.sink_failure_mode == "continue"
+
+    def test_initialises_with_one_sink(
+        self,
+        context: LogContext,
+        recording_sink: RecordingSink,
+    ) -> None:
+        logger = monitauditLogger(
+            context,
+            recording_sink,
         )
 
-    except ValueError as exception:
-        result = (
-            monitauditLogger._serialize_exception(
-                exception
+        assert logger.context is context
+        assert logger.sinks == (recording_sink,)
+        assert logger.sink_failure_mode == "continue"
+
+    def test_initialises_with_multiple_sinks(
+        self,
+        context: LogContext,
+    ) -> None:
+        first_sink = RecordingSink()
+        second_sink = RecordingSink()
+
+        logger = monitauditLogger(
+            context,
+            first_sink,
+            second_sink,
+            sink_failure_mode="raise",
+        )
+
+        assert logger.sinks == (
+            first_sink,
+            second_sink,
+        )
+        assert logger.sink_failure_mode == "raise"
+
+    @pytest.mark.parametrize(
+        "invalid_context",
+        [
+            None,
+            object(),
+            {},
+            "context",
+            123,
+        ],
+    )
+    def DJ_test_rejects_invalid_context(
+        self,
+        invalid_context: object,
+    ) -> None:
+        with pytest.raises(
+            TypeError,
+            match=(
+                "context must be a LogContext instance; "
+                "received"
+            ),
+        ):
+            monitauditLogger(  # type: ignore[arg-type]
+                invalid_context
+            )
+
+    def DJ_test_context_error_identifies_received_type(
+        self,
+    ) -> None:
+        with pytest.raises(TypeError) as exception_info:
+            monitauditLogger("invalid")  # type: ignore[arg-type]
+
+        assert (
+            str(exception_info.value)
+            == (
+                "context must be a LogContext instance; "
+                "received str."
             )
         )
 
-    (
-        error_type,
-        error_message,
-        traceback_lines,
-    ) = result
-
-    assert error_type == "ValueError"
-
-    assert (
-        error_message
-        == "something went wrong"
+    @pytest.mark.parametrize(
+        "invalid_sink",
+        [
+            None,
+            object(),
+            {},
+            "sink",
+            123,
+        ],
     )
+    def DJ_test_rejects_invalid_sink(
+        self,
+        context: LogContext,
+        invalid_sink: object,
+    ) -> None:
+        with pytest.raises(
+            TypeError,
+            match="All sinks must inherit from Sink",
+        ):
+            monitauditLogger(  # type: ignore[arg-type]
+                context,
+                invalid_sink,
+            )
 
-    assert traceback_lines
+    def DJ_test_sink_error_identifies_received_type(
+        self,
+        context: LogContext,
+    ) -> None:
+        with pytest.raises(TypeError) as exception_info:
+            monitauditLogger(  # type: ignore[arg-type]
+                context,
+                "invalid",
+            )
 
-    assert any(
-        "ValueError: something went wrong"
-        in line
-        for line in traceback_lines
-    )
-
-
-def test_safe_exception_text() -> None:
-    exception = ValueError(
-        "invalid value"
-    )
-
-    result = (
-        monitauditLogger._safe_exception_text(
-            exception
-        )
-    )
-
-    assert result == "invalid value"
-
-
-def test_safe_exception_text_handles_broken_str() -> None:
-    exception = BrokenStringException()
-
-    result = (
-        monitauditLogger._safe_exception_text(
-            exception
-        )
-    )
-
-    assert (
-        result
-        == "<exception message unavailable>"
-    )
-
-
-def test_error_without_exception(
-    logger: monitauditLogger,
-) -> None:
-    log = logger.error(
-        "error without exception",
-        module="test_module",
-        function="test_function",
-    )
-
-    assert log.error_type is None
-    assert log.error_message is None
-    assert log.traceback == []
-
-
-def test_error_with_exception(
-    logger: monitauditLogger,
-) -> None:
-    try:
-        raise ValueError(
-            "invalid value"
+        assert (
+            str(exception_info.value)
+            == (
+                "All sinks must inherit from Sink; "
+                "received str."
+            )
         )
 
-    except ValueError as exception:
-        log = logger.error(
+    @pytest.mark.parametrize(
+        "sink_failure_mode",
+        [
+            "",
+            "CONTINUE",
+            "RAISE",
+            "ignore",
+            "fail",
+            None,
+            1,
+        ],
+    )
+    def test_rejects_invalid_sink_failure_mode(
+        self,
+        context: LogContext,
+        sink_failure_mode: object,
+    ) -> None:
+        with pytest.raises(
+            ValueError,
+            match=(
+                "sink_failure_mode must be "
+                "'continue' or 'raise'"
+            ),
+        ):
+            monitauditLogger(
+                context,
+                sink_failure_mode=sink_failure_mode,  # type: ignore[arg-type]
+            )
+
+    def test_sink_failure_mode_error_includes_value(
+        self,
+        context: LogContext,
+    ) -> None:
+        with pytest.raises(ValueError) as exception_info:
+            monitauditLogger(
+                context,
+                sink_failure_mode="invalid",  # type: ignore[arg-type]
+            )
+
+        assert (
+            str(exception_info.value)
+            == (
+                "sink_failure_mode must be "
+                "'continue' or 'raise'; "
+                "received 'invalid'."
+            )
+        )
+
+    @pytest.mark.parametrize(
+        "sink_failure_mode",
+        [
+            "continue",
+            "raise",
+        ],
+    )
+    def test_accepts_supported_sink_failure_modes(
+        self,
+        context: LogContext,
+        sink_failure_mode: str,
+    ) -> None:
+        logger = monitauditLogger(
+            context,
+            sink_failure_mode=sink_failure_mode,  # type: ignore[arg-type]
+        )
+
+        assert logger.sink_failure_mode == sink_failure_mode
+
+
+class TestStandardLogging:
+    @pytest.mark.parametrize(
+        ("method_name", "expected_type"),
+        [
+            ("debug", DebugLog),
+            ("info", InfoLog),
+            ("warning", WarningLog),
+        ],
+    )
+    def test_returns_expected_log_type(
+        self,
+        logger: monitauditLogger,
+        recording_sink: RecordingSink,
+        method_name: str,
+        expected_type: type[BaseLog],
+    ) -> None:
+        method = getattr(logger, method_name)
+
+        result = method(
+            "test message",
+            module="tests.module",
+            function="test_function",
+        )
+
+        assert isinstance(result, expected_type)
+        assert recording_sink.logs == [result]
+
+    @pytest.mark.parametrize(
+        ("method_name", "expected_type"),
+        [
+            ("debug", DebugLog),
+            ("info", InfoLog),
+            ("warning", WarningLog),
+        ],
+    )
+    def test_populates_common_fields(
+        self,
+        logger: monitauditLogger,
+        recording_sink: RecordingSink,
+        method_name: str,
+        expected_type: type[BaseLog],
+    ) -> None:
+        method = getattr(logger, method_name)
+
+        result = method(
+            "structured message",
+            call_id="call-123",
+            parent_call_id="parent-456",
+            parameters={
+                "count": 12,
+                "enabled": True,
+            },
+            duration_ms=125.5,
+            module="sample.module",
+            function="sample_function",
+            customer_id=1001,
+            batch="nightly",
+        )
+
+        assert isinstance(result, expected_type)
+        assert result.message == "structured message"
+        assert result.context is logger.context
+        assert result.call_id == "call-123"
+        assert result.parent_call_id == "parent-456"
+        assert result.parameters == {
+            "count": 12,
+            "enabled": True,
+        }
+        assert result.duration_ms == 125.5
+        assert result.module == "sample.module"
+        assert result.function == "sample_function"
+        assert result.attributes == {
+            "customer_id": 1001,
+            "batch": "nightly",
+        }
+        assert recording_sink.logs == [result]
+
+    @pytest.mark.parametrize(
+        "method_name",
+        [
+            "debug",
+            "info",
+            "warning",
+        ],
+    )
+    def test_uses_empty_mappings_when_data_is_omitted(
+        self,
+        logger: monitauditLogger,
+        method_name: str,
+    ) -> None:
+        method = getattr(logger, method_name)
+
+        result = method(
+            "message",
+            module="module",
+            function="function",
+        )
+
+        assert result.parameters == {}
+        assert result.attributes == {}
+
+    def test_log_without_sinks_returns_log(
+        self,
+        context: LogContext,
+    ) -> None:
+        logger = monitauditLogger(context)
+
+        result = logger.info(
+            "message",
+            module="module",
+            function="function",
+        )
+
+        assert isinstance(result, InfoLog)
+        assert result.message == "message"
+
+    def test_each_log_is_written_once_to_each_sink(
+        self,
+        context: LogContext,
+    ) -> None:
+        first_sink = RecordingSink()
+        second_sink = RecordingSink()
+
+        logger = monitauditLogger(
+            context,
+            first_sink,
+            second_sink,
+        )
+
+        result = logger.info(
+            "message",
+            module="module",
+            function="function",
+        )
+
+        assert first_sink.logs == [result]
+        assert second_sink.logs == [result]
+        assert first_sink.logs[0] is second_sink.logs[0]
+
+
+class TestExceptionLogging:
+    @pytest.mark.parametrize(
+        ("method_name", "expected_type"),
+        [
+            ("error", ErrorLog),
+            ("critical", CriticalLog),
+        ],
+    )
+    def test_returns_expected_exception_log_type(
+        self,
+        logger: monitauditLogger,
+        recording_sink: RecordingSink,
+        method_name: str,
+        expected_type: type[BaseLog],
+    ) -> None:
+        method = getattr(logger, method_name)
+
+        result = method(
+            "operation failed",
+            module="tests.module",
+            function="test_function",
+        )
+
+        assert isinstance(result, expected_type)
+        assert recording_sink.logs == [result]
+
+    @pytest.mark.parametrize(
+        ("method_name", "expected_type"),
+        [
+            ("error", ErrorLog),
+            ("critical", CriticalLog),
+        ],
+    )
+    def test_populates_exception_fields(
+        self,
+        logger: monitauditLogger,
+        method_name: str,
+        expected_type: type[BaseLog],
+    ) -> None:
+        exception = capture_exception()
+        method = getattr(logger, method_name)
+
+        result = method(
             "operation failed",
             exception=exception,
-            module="test_module",
-            function="test_function",
+            call_id="call-1",
+            parent_call_id="parent-1",
+            parameters={"record_id": 10},
+            duration_ms=55.25,
+            module="sample.module",
+            function="process_record",
+            recoverable=False,
         )
 
-        assert log.error_type == "ValueError"
-
-        assert (
-            log.error_message
-            == "invalid value"
+        assert isinstance(result, expected_type)
+        assert result.message == "operation failed"
+        assert result.call_id == "call-1"
+        assert result.parent_call_id == "parent-1"
+        assert result.parameters == {"record_id": 10}
+        assert result.duration_ms == 55.25
+        assert result.module == "sample.module"
+        assert result.function == "process_record"
+        assert result.attributes == {"recoverable": False}
+        assert result.error_type == "ValueError"
+        assert result.error_message == "invalid value"
+        assert result.traceback
+        assert any(
+            "ValueError: invalid value" in line
+            for line in result.traceback
+        )
+        assert any(
+            "raise_value_error" in line
+            for line in result.traceback
         )
 
-        assert log.traceback
-
-        traceback_text = "".join(
-            log.traceback
-        )
-
-        assert (
-            "ValueError: invalid value"
-            in traceback_text
-        )
-
-
-def test_critical_without_exception(
-    logger: monitauditLogger,
-) -> None:
-    log = logger.critical(
-        "critical without exception",
-        module="test_module",
-        function="test_function",
+    @pytest.mark.parametrize(
+        "method_name",
+        [
+            "error",
+            "critical",
+        ],
     )
+    def test_supports_missing_exception(
+        self,
+        logger: monitauditLogger,
+        method_name: str,
+    ) -> None:
+        method = getattr(logger, method_name)
 
-    assert log.error_type is None
-    assert log.error_message is None
-    assert log.traceback == []
-
-
-def test_critical_with_exception(
-    logger: monitauditLogger,
-) -> None:
-    try:
-        raise RuntimeError(
-            "critical failure"
+        result = method(
+            "failure without exception",
+            module="module",
+            function="function",
         )
 
-    except RuntimeError as exception:
-        log = logger.critical(
-            "system failure",
+        assert result.error_type is None
+        assert result.error_message is None
+        assert result.traceback == []
+
+    @pytest.mark.parametrize(
+        "method_name",
+        [
+            "error",
+            "critical",
+        ],
+    )
+    def test_handles_exception_with_faulty_string_conversion(
+        self,
+        logger: monitauditLogger,
+        method_name: str,
+    ) -> None:
+        exception = FaultyStringException()
+        method = getattr(logger, method_name)
+
+        result = method(
+            "failure",
             exception=exception,
-            module="test_module",
-            function="test_function",
+            module="module",
+            function="function",
         )
+
+        assert result.error_type == "FaultyStringException"
+        assert (
+            result.error_message
+            == "<exception message unavailable>"
+        )
+        assert isinstance(result.traceback, list)
+
+    def test_serialize_exception_without_traceback(
+        self,
+    ) -> None:
+        exception = ValueError("not raised")
+
+        error_type, error_message, traceback_lines = (
+            monitauditLogger._serialize_exception(exception)
+        )
+
+        assert error_type == "ValueError"
+        assert error_message == "not raised"
+        assert traceback_lines
+        assert any(
+            "ValueError: not raised" in line
+            for line in traceback_lines
+        )
+
+    def test_serialize_exception_falls_back_when_formatter_fails(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        exception = ValueError("formatter failed")
+
+        def fail_format_exception(
+            *_args: object,
+            **_kwargs: object,
+        ) -> list:
+            raise RuntimeError("formatting failed")
+
+        monkeypatch.setattr(
+            logger_module.traceback,
+            "format_exception",
+            fail_format_exception,
+        )
+
+        error_type, error_message, traceback_lines = (
+            monitauditLogger._serialize_exception(exception)
+        )
+
+        assert error_type == "ValueError"
+        assert error_message == "formatter failed"
+        assert traceback_lines == [
+            "ValueError: formatter failed\n"
+        ]
+
+    def test_raw_exception_is_not_stored_in_log(
+        self,
+        logger: monitauditLogger,
+    ) -> None:
+        exception = ValueError("sensitive exception")
+
+        result = logger.error(
+            "operation failed",
+            exception=exception,
+            module="module",
+            function="function",
+        )
+
+        values = vars(result)
+
+        assert all(
+            value is not exception
+            for value in values.values()
+        )
+
+
+class TestParameterPreparation:
+    @pytest.mark.parametrize(
+        "parameters",
+        [
+            None,
+            {},
+        ],
+    )
+    def test_empty_parameters_return_new_empty_mapping(
+        self,
+        parameters: dict[str, Any] | None,
+    ) -> None:
+        result = monitauditLogger._prepare_parameters(
+            parameters
+        )
+
+        assert result == {}
+        assert result is not parameters
+
+    def test_parameters_are_processed_with_json_safe_dict(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        received: list[dict[str, Any]] = []
+
+        def fake_json_safe_dict(
+            value: dict[str, Any],
+        ) -> dict[str, Any]:
+            received.append(value)
+            return {"converted": True}
+
+        monkeypatch.setattr(
+            logger_module,
+            "json_safe_dict",
+            fake_json_safe_dict,
+        )
+
+        parameters = {"value": object()}
+
+        result = monitauditLogger._prepare_parameters(
+            parameters
+        )
+
+        assert result == {"converted": True}
+        assert received == [parameters]
+        assert received[0] is not parameters
+
+    def test_prepared_parameters_are_independent_from_input(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        def identity_json_safe_dict(
+            value: dict[str, Any],
+        ) -> dict[str, Any]:
+            return value
+
+        monkeypatch.setattr(
+            logger_module,
+            "json_safe_dict",
+            identity_json_safe_dict,
+        )
+
+        parameters = {"value": 10}
+
+        result = monitauditLogger._prepare_parameters(
+            parameters
+        )
+
+        assert result == parameters
+        assert result is not parameters
+
+        result["value"] = 20
+
+        assert parameters == {"value": 10}
+
+
+class TestAttributePreparation:
+    def test_empty_attributes_return_new_empty_mapping(
+        self,
+    ) -> None:
+        attributes: dict[str, Any] = {}
+
+        result = monitauditLogger._prepare_attributes(
+            attributes
+        )
+
+        assert result == {}
+        assert result is not attributes
+
+    def test_attributes_are_processed_with_json_safe_dict(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        received: list[dict[str, Any]] = []
+
+        def fake_json_safe_dict(
+            value: dict[str, Any],
+        ) -> dict[str, Any]:
+            received.append(value)
+            return {"converted": "yes"}
+
+        monkeypatch.setattr(
+            logger_module,
+            "json_safe_dict",
+            fake_json_safe_dict,
+        )
+
+        attributes = {"value": object()}
+
+        result = monitauditLogger._prepare_attributes(
+            attributes
+        )
+
+        assert result == {"converted": "yes"}
+        assert received == [attributes]
+        assert received[0] is not attributes
+
+    def test_prepared_attributes_are_independent_from_input(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        def identity_json_safe_dict(
+            value: dict[str, Any],
+        ) -> dict[str, Any]:
+            return value
+
+        monkeypatch.setattr(
+            logger_module,
+            "json_safe_dict",
+            identity_json_safe_dict,
+        )
+
+        attributes = {"value": 10}
+
+        result = monitauditLogger._prepare_attributes(
+            attributes
+        )
+
+        assert result == attributes
+        assert result is not attributes
+
+        result["value"] = 20
+
+        assert attributes == {"value": 10}
+
+
+class TestSafeExceptionText:
+    def test_returns_exception_message(
+        self,
+    ) -> None:
+        result = monitauditLogger._safe_exception_text(
+            ValueError("invalid value")
+        )
+
+        assert result == "invalid value"
+
+    def test_returns_fallback_when_exception_string_fails(
+        self,
+    ) -> None:
+        result = monitauditLogger._safe_exception_text(
+            FaultyStringException()
+        )
+
+        assert result == "<exception message unavailable>"
+
+
+class TestExceptionSerialisation:
+    def test_none_returns_empty_error_fields(
+        self,
+    ) -> None:
+        result = monitauditLogger._serialize_exception(
+            None
+        )
+
+        assert result == (
+            None,
+            None,
+            [],
+        )
+
+    def test_serialises_exception_type_and_message(
+        self,
+    ) -> None:
+        exception = RuntimeError("runtime failed")
+
+        (
+            error_type,
+            error_message,
+            traceback_lines,
+        ) = monitauditLogger._serialize_exception(
+            exception
+        )
+
+        assert error_type == "RuntimeError"
+        assert error_message == "runtime failed"
+        assert isinstance(traceback_lines, list)
+
+    def test_serialises_raised_exception_traceback(
+        self,
+    ) -> None:
+        exception = capture_exception()
+
+        (
+            error_type,
+            error_message,
+            traceback_lines,
+        ) = monitauditLogger._serialize_exception(
+            exception
+        )
+
+        assert error_type == "ValueError"
+        assert error_message == "invalid value"
+        assert traceback_lines
+        assert any(
+            "raise_value_error" in line
+            for line in traceback_lines
+        )
+        assert any(
+            "ValueError: invalid value" in line
+            for line in traceback_lines
+        )
+
+
+class TestSinkWriting:
+    def test_continue_mode_writes_to_all_sinks(
+        self,
+        context: LogContext,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        first_sink = RecordingSink()
+        failing_sink = FailingSink(
+            ValueError("write unavailable")
+        )
+        final_sink = RecordingSink()
+
+        logger = monitauditLogger(
+            context,
+            first_sink,
+            failing_sink,
+            final_sink,
+            sink_failure_mode="continue",
+        )
+
+        result = logger.info(
+            "message",
+            module="module",
+            function="function",
+        )
+
+        assert first_sink.logs == [result]
+        assert failing_sink.logs == [result]
+        assert failing_sink.write_count == 1
+        assert final_sink.logs == [result]
+
+        captured = capsys.readouterr()
+
+        assert captured.out == ""
+        assert (
+            "monitaudit sink failure: "
+            "FailingSink: ValueError: "
+            "write unavailable"
+        ) in captured.err
+
+    def test_continue_mode_does_not_raise(
+        self,
+        context: LogContext,
+    ) -> None:
+        failing_sink = FailingSink()
+
+        logger = monitauditLogger(
+            context,
+            failing_sink,
+            sink_failure_mode="continue",
+        )
+
+        result = logger.info(
+            "message",
+            module="module",
+            function="function",
+        )
+
+        assert isinstance(result, InfoLog)
+        assert failing_sink.write_count == 1
+
+    def test_raise_mode_attempts_all_sinks_before_raising(
+        self,
+        context: LogContext,
+    ) -> None:
+        first_failing_sink = FailingSink(
+            ValueError("first failure")
+        )
+        successful_sink = RecordingSink()
+        second_failing_sink = AnotherFailingSink()
+
+        logger = monitauditLogger(
+            context,
+            first_failing_sink,
+            successful_sink,
+            second_failing_sink,
+            sink_failure_mode="raise",
+        )
+
+        with pytest.raises(RuntimeError) as exception_info:
+            logger.info(
+                "message",
+                module="module",
+                function="function",
+            )
+
+        assert first_failing_sink.write_count == 1
+        assert len(successful_sink.logs) == 1
+        assert second_failing_sink.write_count == 1
 
         assert (
-            log.error_type
-            == "RuntimeError"
+            str(exception_info.value)
+            == (
+                "monitaudit sink failure(s): "
+                "FailingSink, AnotherFailingSink"
+            )
         )
+
+    def test_raise_mode_chains_first_sink_exception(
+        self,
+        context: LogContext,
+    ) -> None:
+        first_exception = ValueError("first failure")
+        second_exception = RuntimeError("second failure")
+
+        first_sink = FailingSink(first_exception)
+        second_sink = FailingSink(second_exception)
+
+        logger = monitauditLogger(
+            context,
+            first_sink,
+            second_sink,
+            sink_failure_mode="raise",
+        )
+
+        with pytest.raises(RuntimeError) as exception_info:
+            logger.info(
+                "message",
+                module="module",
+                function="function",
+            )
+
+        assert exception_info.value.__cause__ is first_exception
+
+    def test_raise_mode_does_not_raise_when_all_sinks_succeed(
+        self,
+        context: LogContext,
+    ) -> None:
+        first_sink = RecordingSink()
+        second_sink = RecordingSink()
+
+        logger = monitauditLogger(
+            context,
+            first_sink,
+            second_sink,
+            sink_failure_mode="raise",
+        )
+
+        result = logger.info(
+            "message",
+            module="module",
+            function="function",
+        )
+
+        assert first_sink.logs == [result]
+        assert second_sink.logs == [result]
+
+    def test_repeated_sink_instance_is_called_repeatedly(
+        self,
+        context: LogContext,
+    ) -> None:
+        sink = RecordingSink()
+
+        logger = monitauditLogger(
+            context,
+            sink,
+            sink,
+        )
+
+        result = logger.info(
+            "message",
+            module="module",
+            function="function",
+        )
+
+        assert sink.logs == [
+            result,
+            result,
+        ]
+
+
+class TestSinkFailureReporting:
+    def test_reports_sink_name_exception_type_and_message(
+        self,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        sink = FailingSink()
+        exception = ValueError("cannot write")
+
+        monitauditLogger._report_sink_failure(
+            sink=sink,
+            exception=exception,
+        )
+
+        captured = capsys.readouterr()
+
+        assert captured.out == ""
+        assert (
+            captured.err
+            == (
+                "monitaudit sink failure: "
+                "FailingSink: "
+                "ValueError: "
+                "cannot write\n"
+            )
+        )
+
+    def test_handles_exception_with_faulty_string_conversion(
+        self,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        sink = FailingSink()
+
+        monitauditLogger._report_sink_failure(
+            sink=sink,
+            exception=FaultyStringException(),
+        )
+
+        captured = capsys.readouterr()
 
         assert (
-            log.error_message
-            == "critical failure"
+            "<exception message unavailable>"
+            in captured.err
         )
 
-        assert log.traceback
+    def test_reporting_failure_never_raises(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        def broken_print(
+            *_args: object,
+            **_kwargs: object,
+        ) -> None:
+            raise RuntimeError("stderr unavailable")
 
-        traceback_text = "".join(
-            log.traceback
+        monkeypatch.setattr(
+            builtins,
+            "print",
+            broken_print,
         )
 
-        assert (
-            "RuntimeError: critical failure"
-            in traceback_text
+        monitauditLogger._report_sink_failure(
+            sink=FailingSink(),
+            exception=ValueError("write failed"),
         )
 
+    def test_reporting_does_not_use_logger_sinks(
+        self,
+        context: LogContext,
+    ) -> None:
+        failing_sink = FailingSink()
 
-def test_explicit_location_is_preserved(
-    logger: monitauditLogger,
-) -> None:
-    log = logger.info(
-        "location",
-        module="custom.module",
-        function="custom_function",
-    )
+        logger = monitauditLogger(
+            context,
+            failing_sink,
+            sink_failure_mode="continue",
+        )
 
-    assert (
-        log.module
-        == "custom.module"
-    )
+        logger.info(
+            "message",
+            module="module",
+            function="function",
+        )
 
-    assert (
-        log.function
-        == "custom_function"
-    )
+        assert failing_sink.write_count == 1
 
 
-def test_resolve_caller_with_explicit_values(
-    logger: monitauditLogger,
-) -> None:
-    module, function = (
-        logger._resolve_caller(
+class TestCallerResolution:
+    def test_preserves_explicit_module_and_function(
+        self,
+        logger: monitauditLogger,
+    ) -> None:
+        result = logger._resolve_caller(
             module="explicit.module",
             function="explicit_function",
         )
-    )
 
-    assert module == "explicit.module"
-
-    assert (
-        function
-        == "explicit_function"
-    )
-
-
-def test_resolve_caller_detects_missing_values(
-    logger: monitauditLogger,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    def fake_caller() -> tuple[
-        str | None,
-        str | None,
-    ]:
-        return (
-            "detected.module",
-            "detected_function",
+        assert result == (
+            "explicit.module",
+            "explicit_function",
         )
 
-    monkeypatch.setattr(
-        logger,
-        "_caller",
-        fake_caller,
-    )
-
-    module, function = (
-        logger._resolve_caller(
-            module=None,
-            function=None,
-        )
-    )
-
-    assert module == "detected.module"
-
-    assert (
-        function
-        == "detected_function"
-    )
-
-
-def test_resolve_caller_preserves_explicit_module(
-    logger: monitauditLogger,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    def fake_caller() -> tuple[
-        str | None,
-        str | None,
-    ]:
-        return (
-            "detected.module",
-            "detected_function",
-        )
-
-    monkeypatch.setattr(
-        logger,
-        "_caller",
-        fake_caller,
-    )
-
-    module, function = (
-        logger._resolve_caller(
-            module="explicit.module",
-            function=None,
-        )
-    )
-
-    assert module == "explicit.module"
-
-    assert (
-        function
-        == "detected_function"
-    )
-
-
-def test_resolve_caller_preserves_explicit_function(
-    logger: monitauditLogger,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    def fake_caller() -> tuple[
-        str | None,
-        str | None,
-    ]:
-        return (
-            "detected.module",
-            "detected_function",
-        )
-
-    monkeypatch.setattr(
-        logger,
-        "_caller",
-        fake_caller,
-    )
-
-    module, function = (
-        logger._resolve_caller(
-            module=None,
-            function="explicit_function",
-        )
-    )
-
-    assert module == "detected.module"
-
-    assert (
-        function
-        == "explicit_function"
-    )
-
-
-def test_explicit_empty_location_is_preserved(
-    logger: monitauditLogger,
-) -> None:
-    module, function = (
-        logger._resolve_caller(
+    def test_preserves_explicit_empty_strings(
+        self,
+        logger: monitauditLogger,
+    ) -> None:
+        result = logger._resolve_caller(
             module="",
             function="",
         )
-    )
 
-    assert module == ""
-    assert function == ""
-
-
-def test_caller_returns_calling_test_location() -> None:
-    module, function = (
-        monitauditLogger._caller()
-    )
-
-    assert module == __name__
-
-    assert function == (
-        "test_caller_returns_calling_test_location"
-    )
-
-
-def test_logger_module_is_internal() -> None:
-    assert (
-        monitauditLogger._is_internal_module(
-            "monitaudit.logger"
-        )
-        is True
-    )
-
-
-def test_monitaudit_module_is_internal() -> None:
-    assert (
-        monitauditLogger._is_internal_module(
-            "monitaudit.models.monitaudit"
-        )
-        is True
-    )
-
-
-def test_application_module_is_not_internal() -> None:
-    assert (
-        monitauditLogger._is_internal_module(
-            "application.main"
-        )
-        is False
-    )
-
-
-def test_none_module_is_not_internal() -> None:
-    assert (
-        monitauditLogger._is_internal_module(
-            None
-        )
-        is False
-    )
-
-
-def test_sink_failure_continue_mode_does_not_raise(
-    context: LogContext,
-    capsys: pytest.CaptureFixture[str],
-) -> None:
-    failing_sink = FailingSink(
-        "write failed"
-    )
-
-    good_sink = MemorySink()
-
-    logger = monitauditLogger(
-        context,
-        failing_sink,
-        good_sink,
-        sink_failure_mode="continue",
-    )
-
-    log = logger.info(
-        "failure isolation",
-        module="test_module",
-        function="test_function",
-    )
-
-    captured = capsys.readouterr()
-
-    assert failing_sink.calls == 1
-    assert good_sink.logs == [log]
-
-    assert (
-        "monitaudit sink failure: "
-        "FailingSink: "
-        "RuntimeError: "
-        "write failed"
-        in captured.err
-    )
-
-
-def test_failed_sink_does_not_prevent_later_sinks(
-    context: LogContext,
-) -> None:
-    first_sink = MemorySink()
-    failing_sink = FailingSink()
-    last_sink = MemorySink()
-
-    logger = monitauditLogger(
-        context,
-        first_sink,
-        failing_sink,
-        last_sink,
-        sink_failure_mode="continue",
-    )
-
-    log = logger.info(
-        "all sinks attempted",
-        module="test_module",
-        function="test_function",
-    )
-
-    assert first_sink.logs == [log]
-    assert failing_sink.calls == 1
-    assert last_sink.logs == [log]
-
-
-def test_multiple_failing_sinks_continue_mode(
-    context: LogContext,
-    capsys: pytest.CaptureFixture[str],
-) -> None:
-    first = FailingSink(
-        "first failure"
-    )
-
-    second = FailingSink(
-        "second failure"
-    )
-
-    good_sink = MemorySink()
-
-    logger = monitauditLogger(
-        context,
-        first,
-        second,
-        good_sink,
-        sink_failure_mode="continue",
-    )
-
-    log = logger.warning(
-        "multiple failures",
-        module="test_module",
-        function="test_function",
-    )
-
-    captured = capsys.readouterr()
-
-    assert first.calls == 1
-    assert second.calls == 1
-    assert good_sink.logs == [log]
-
-    assert (
-        "first failure"
-        in captured.err
-    )
-
-    assert (
-        "second failure"
-        in captured.err
-    )
-
-
-def test_sink_failure_raise_mode_raises_after_all_sinks(
-    context: LogContext,
-) -> None:
-    failing_sink = FailingSink(
-        "write failed"
-    )
-
-    good_sink = MemorySink()
-
-    logger = monitauditLogger(
-        context,
-        failing_sink,
-        good_sink,
-        sink_failure_mode="raise",
-    )
-
-    with pytest.raises(
-        RuntimeError,
-        match=(
-            r"monitaudit sink failure\(s\): "
-            r"FailingSink"
-        ),
-    ) as error_info:
-        logger.info(
-            "raise test",
-            module="test_module",
-            function="test_function",
+        assert result == (
+            "",
+            "",
         )
 
-    assert failing_sink.calls == 1
+    def test_does_not_call_caller_when_both_values_are_explicit(
+        self,
+        logger: monitauditLogger,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        def fail_caller() -> tuple[str | None, str | None]:
+            raise AssertionError("_caller must not be called")
 
-    # The healthy sink must still have been called.
-    assert len(good_sink.logs) == 1
+        monkeypatch.setattr(
+            logger,
+            "_caller",
+            fail_caller,
+        )
 
-    cause = error_info.value.__cause__
+        result = logger._resolve_caller(
+            module="module",
+            function="function",
+        )
 
-    assert isinstance(
-        cause,
-        RuntimeError,
-    )
+        assert result == (
+            "module",
+            "function",
+        )
 
-    assert str(cause) == "write failed"
+    def test_detects_both_missing_values(
+        self,
+        logger: monitauditLogger,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setattr(
+            logger,
+            "_caller",
+            lambda: (
+                "detected.module",
+                "detected_function",
+            ),
+        )
+
+        result = logger._resolve_caller(
+            module=None,
+            function=None,
+        )
+
+        assert result == (
+            "detected.module",
+            "detected_function",
+        )
+
+    def test_detects_only_missing_module(
+        self,
+        logger: monitauditLogger,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setattr(
+            logger,
+            "_caller",
+            lambda: (
+                "detected.module",
+                "detected_function",
+            ),
+        )
+
+        result = logger._resolve_caller(
+            module=None,
+            function="explicit_function",
+        )
+
+        assert result == (
+            "detected.module",
+            "explicit_function",
+        )
+
+    def test_detects_only_missing_function(
+        self,
+        logger: monitauditLogger,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setattr(
+            logger,
+            "_caller",
+            lambda: (
+                "detected.module",
+                "detected_function",
+            ),
+        )
+
+        result = logger._resolve_caller(
+            module="explicit.module",
+            function=None,
+        )
+
+        assert result == (
+            "explicit.module",
+            "detected_function",
+        )
+
+    def test_public_log_method_detects_external_caller(
+        self,
+        logger: monitauditLogger,
+    ) -> None:
+        result = logger.info("message")
+
+        assert result.module == __name__
+        assert (
+            result.function
+            == (
+                "test_public_log_method_"
+                "detects_external_caller"
+            )
+        )
+
+    def test_explicit_location_is_used_by_public_method(
+        self,
+        logger: monitauditLogger,
+    ) -> None:
+        result = logger.info(
+            "message",
+            module="",
+            function="",
+        )
+
+        assert result.module == ""
+        assert result.function == ""
 
 
-def test_multiple_sink_failures_raise_mode_lists_all_sinks(
-    context: LogContext,
-) -> None:
-    class FirstFailingSink(Sink):
-        def write(
-            self,
-            log: BaseLog,
-        ) -> None:
-            raise ValueError(
-                "first"
+class TestCallerInspection:
+    def test_caller_returns_external_test_frame(
+        self,
+    ) -> None:
+        module, function = monitauditLogger._caller()
+
+        assert module == __name__
+        assert function == "test_caller_returns_external_test_frame"
+
+    def test_caller_returns_none_when_current_frame_is_unavailable(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setattr(
+            logger_module.inspect,
+            "currentframe",
+            lambda: None,
+        )
+
+        result = monitauditLogger._caller()
+
+        assert result == (
+            None,
+            None,
+        )
+
+    def test_caller_handles_non_string_module_name(
+        self,
+    ) -> None:
+        original_name = globals().get("__name__")
+
+        try:
+            globals()["__name__"] = 123
+
+            module, function = monitauditLogger._caller()
+
+            assert module is None
+            assert (
+                function
+                == "test_caller_handles_non_string_module_name"
             )
 
-    class SecondFailingSink(Sink):
-        def write(
-            self,
-            log: BaseLog,
-        ) -> None:
-            raise OSError(
-                "second"
-            )
+        finally:
+            globals()["__name__"] = original_name
 
-    good_sink = MemorySink()
 
-    logger = monitauditLogger(
-        context,
-        FirstFailingSink(),
-        good_sink,
-        SecondFailingSink(),
-        sink_failure_mode="raise",
+class TestInternalModuleDetection:
+    @pytest.mark.parametrize(
+        "module",
+        sorted(_INTERNAL_CALLER_MODULES),
     )
-
-    with pytest.raises(
-        RuntimeError,
-    ) as error_info:
-        logger.error(
-            "multiple sink failures",
-            module="test_module",
-            function="test_function",
+    def test_known_internal_modules_are_internal(
+        self,
+        module: str,
+    ) -> None:
+        assert (
+            monitauditLogger._is_internal_module(module)
+            is True
         )
 
-    assert str(
-        error_info.value
-    ) == (
-        "monitaudit sink failure(s): "
-        "FirstFailingSink, SecondFailingSink"
+    @pytest.mark.parametrize(
+        "module",
+        [
+            None,
+            "",
+            "__main__",
+            "tests.test_logger",
+            "monitaudit",
+            "monitaudit.logger.extra",
+            "monitaudit.models",
+        ],
     )
+    def test_other_modules_are_not_internal(
+        self,
+        module: str | None,
+    ) -> None:
+        assert (
+            monitauditLogger._is_internal_module(module)
+            is False
+        )
 
-    assert len(
-        good_sink.logs
-    ) == 1
+    def test_internal_module_collection_is_immutable(
+        self,
+    ) -> None:
+        assert isinstance(
+            _INTERNAL_CALLER_MODULES,
+            frozenset,
+        )
 
-    assert isinstance(
-        error_info.value.__cause__,
-        ValueError,
+        with pytest.raises(AttributeError):
+            _INTERNAL_CALLER_MODULES.add(  # type: ignore[attr-defined]
+                "another.module"
+            )
+
+
+class TestPrivateLoggingHelpers:
+    def test_log_creates_and_writes_standard_log(
+        self,
+        logger: monitauditLogger,
+        recording_sink: RecordingSink,
+    ) -> None:
+        result = logger._log(
+            InfoLog,
+            "message",
+            call_id="call",
+            parent_call_id="parent",
+            parameters={"value": 1},
+            duration_ms=10.0,
+            module="module",
+            function="function",
+            attributes={"attribute": "value"},
+        )
+
+        assert isinstance(result, InfoLog)
+        assert result.message == "message"
+        assert result.call_id == "call"
+        assert result.parent_call_id == "parent"
+        assert result.parameters == {"value": 1}
+        assert result.duration_ms == 10.0
+        assert result.module == "module"
+        assert result.function == "function"
+        assert result.attributes == {
+            "attribute": "value"
+        }
+        assert recording_sink.logs == [result]
+
+    def test_log_exception_creates_and_writes_exception_log(
+        self,
+        logger: monitauditLogger,
+        recording_sink: RecordingSink,
+    ) -> None:
+        exception = capture_exception()
+
+        result = logger._log_exception(
+            ErrorLog,
+            "failed",
+            exception=exception,
+            call_id="call",
+            parent_call_id="parent",
+            parameters={"value": 1},
+            duration_ms=10.0,
+            module="module",
+            function="function",
+            attributes={"attribute": "value"},
+        )
+
+        assert isinstance(result, ErrorLog)
+        assert result.error_type == "ValueError"
+        assert result.error_message == "invalid value"
+        assert result.traceback
+        assert recording_sink.logs == [result]
+
+    def test_log_prepares_parameters_and_attributes(
+        self,
+        logger: monitauditLogger,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        prepared_parameters = {"prepared_parameter": True}
+        prepared_attributes = {"prepared_attribute": True}
+
+        monkeypatch.setattr(
+            logger,
+            "_prepare_parameters",
+            lambda _value: prepared_parameters,
+        )
+        monkeypatch.setattr(
+            logger,
+            "_prepare_attributes",
+            lambda _value: prepared_attributes,
+        )
+
+        result = logger._log(
+            DebugLog,
+            "message",
+            call_id=None,
+            parent_call_id=None,
+            parameters={"original": "parameter"},
+            duration_ms=None,
+            module="module",
+            function="function",
+            attributes={"original": "attribute"},
+        )
+
+        assert result.parameters == prepared_parameters
+        assert result.attributes == prepared_attributes
+
+    def test_log_exception_prepares_parameters_and_attributes(
+        self,
+        logger: monitauditLogger,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        prepared_parameters = {"prepared_parameter": True}
+        prepared_attributes = {"prepared_attribute": True}
+
+        monkeypatch.setattr(
+            logger,
+            "_prepare_parameters",
+            lambda _value: prepared_parameters,
+        )
+        monkeypatch.setattr(
+            logger,
+            "_prepare_attributes",
+            lambda _value: prepared_attributes,
+        )
+
+        result = logger._log_exception(
+            CriticalLog,
+            "message",
+            exception=None,
+            call_id=None,
+            parent_call_id=None,
+            parameters={"original": "parameter"},
+            duration_ms=None,
+            module="module",
+            function="function",
+            attributes={"original": "attribute"},
+        )
+
+        assert result.parameters == prepared_parameters
+        assert result.attributes == prepared_attributes
+
+
+class TestPublicMethodDelegation:
+    @pytest.mark.parametrize(
+        ("method_name", "expected_log_type"),
+        [
+            ("debug", DebugLog),
+            ("info", InfoLog),
+            ("warning", WarningLog),
+        ],
     )
+    def test_standard_method_delegates_to_log(
+        self,
+        logger: monitauditLogger,
+        monkeypatch: pytest.MonkeyPatch,
+        method_name: str,
+        expected_log_type: type[BaseLog],
+    ) -> None:
+        captured: dict[str, Any] = {}
+        sentinel = object()
 
+        def fake_log(
+            log_type: object,
+            message: str,
+            **kwargs: Any,
+        ) -> object:
+            captured["log_type"] = log_type
+            captured["message"] = message
+            captured.update(kwargs)
+            return sentinel
 
-def test_report_sink_failure_writes_to_stderr(
-    capsys: pytest.CaptureFixture[str],
-) -> None:
-    sink = FailingSink()
+        monkeypatch.setattr(
+            logger,
+            "_log",
+            fake_log,
+        )
 
-    exception = RuntimeError(
-        "example failure"
+        method = getattr(logger, method_name)
+
+        result = method(
+            "message",
+            call_id="call",
+            parent_call_id="parent",
+            parameters={"value": 1},
+            duration_ms=10.5,
+            module="module",
+            function="function",
+            custom="attribute",
+        )
+
+        assert result is sentinel
+        assert captured == {
+            "log_type": expected_log_type,
+            "message": "message",
+            "call_id": "call",
+            "parent_call_id": "parent",
+            "parameters": {"value": 1},
+            "duration_ms": 10.5,
+            "module": "module",
+            "function": "function",
+            "attributes": {
+                "custom": "attribute",
+            },
+        }
+
+    @pytest.mark.parametrize(
+        ("method_name", "expected_log_type"),
+        [
+            ("error", ErrorLog),
+            ("critical", CriticalLog),
+        ],
     )
+    def test_exception_method_delegates_to_log_exception(
+        self,
+        logger: monitauditLogger,
+        monkeypatch: pytest.MonkeyPatch,
+        method_name: str,
+        expected_log_type: type[BaseLog],
+    ) -> None:
+        captured: dict[str, Any] = {}
+        sentinel = object()
+        exception = ValueError("failure")
 
-    monitauditLogger._report_sink_failure(
-        sink=sink,
-        exception=exception,
-    )
+        def fake_log_exception(
+            log_type: object,
+            message: str,
+            **kwargs: Any,
+        ) -> object:
+            captured["log_type"] = log_type
+            captured["message"] = message
+            captured.update(kwargs)
+            return sentinel
 
-    captured = capsys.readouterr()
+        monkeypatch.setattr(
+            logger,
+            "_log_exception",
+            fake_log_exception,
+        )
 
-    assert captured.out == ""
+        method = getattr(logger, method_name)
 
-    assert (
-        "monitaudit sink failure: "
-        "FailingSink: "
-        "RuntimeError: "
-        "example failure"
-        in captured.err
-    )
+        result = method(
+            "message",
+            exception=exception,
+            call_id="call",
+            parent_call_id="parent",
+            parameters={"value": 1},
+            duration_ms=10.5,
+            module="module",
+            function="function",
+            custom="attribute",
+        )
 
-
-def test_report_sink_failure_handles_broken_exception_string(
-    capsys: pytest.CaptureFixture[str],
-) -> None:
-    sink = FailingSink()
-
-    exception = BrokenStringException()
-
-    monitauditLogger._report_sink_failure(
-        sink=sink,
-        exception=exception,
-    )
-
-    captured = capsys.readouterr()
-
-    assert (
-        "<exception message unavailable>"
-        in captured.err
-    )
+        assert result is sentinel
+        assert captured == {
+            "log_type": expected_log_type,
+            "message": "message",
+            "exception": exception,
+            "call_id": "call",
+            "parent_call_id": "parent",
+            "parameters": {"value": 1},
+            "duration_ms": 10.5,
+            "module": "module",
+            "function": "function",
+            "attributes": {
+                "custom": "attribute",
+            },
+        }

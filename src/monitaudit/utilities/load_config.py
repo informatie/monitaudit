@@ -28,12 +28,14 @@ DEFAULT_PROPERTIES_PATH = (
 RUNTIME_CONFIG_FILENAMES: tuple[str, ...] = (
     "monitaudit.runtime.yaml",
     "monitaudit.runtime.yml",
+    "monitaudit.runtime",
 )
 
 ENVIRONMENT_VARIABLES: tuple[str, ...] = (
     "MONITAUDIT_ENVIRONMENT",
     "MONITAUDIT_ENV",
     "ENV",
+    "RUN_ENVIRONMENT",
 )
 
 ENVIRONMENT_PATTERN = re.compile(
@@ -81,8 +83,7 @@ def _find_runtime_config(
 
     Resolution order:
     1. Explicit path.
-    2. monitaudit.runtime.yaml.
-    3. monitaudit.runtime.yml.
+    4. monitaudit.runtime.
 
     If both default runtime files exist, loading fails instead
     of silently choosing one.
@@ -140,6 +141,7 @@ def _get_environment() -> str:
     1. MONITAUDIT_ENVIRONMENT
     2. MONITAUDIT_ENV
     3. ENV
+    4. RUN_ENVIRONMENT
 
     The first non-empty variable wins.
 
@@ -412,11 +414,11 @@ def _validate_string_keys(
     return validated
 
 
-def _load_runtime_yaml(
+def _load_runtime(
     path: Path,
 ) -> ConfigDict:
     """
-    Load and validate the application-specific runtime YAML.
+    Load and validate the application-specific runtime.
     """
 
     try:
@@ -679,8 +681,8 @@ def load_config(
 
     Runtime file discovery:
     1. Explicit path.
-    2. monitaudit.runtime.yaml.
-    3. monitaudit.runtime.yml.
+    2. monitaudit.runtime.
+
 
     Configuration precedence:
     1. monitaudit.properties.
@@ -702,7 +704,7 @@ def load_config(
         directory=config_directory,
     )
 
-    runtime = _load_runtime_yaml(
+    runtime = _load_runtime(
         runtime_path
     )
 

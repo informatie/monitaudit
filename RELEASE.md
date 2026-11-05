@@ -8,8 +8,8 @@ MonitAudit follows Semantic Versioning:
 - **MINOR** – new functionality added in a backwards-compatible manner
 - **PATCH** – backwards-compatible fixes, improvements and maintenance
 
----
-## 1.3.0 - 2026-11-02
+---ß
+## 1.3.0 - 2026-11-05
 
 ### Changed
 
@@ -18,6 +18,14 @@ MonitAudit follows Semantic Versioning:
 - link github monitaudit-examples added.
 - release.sh fixed.
 - examples of the config and runtime settings in README.md.
+- used AI to verify the code (sometime more comment)
+- used AI to verify bugs (some bugs fixed)
+- ConsoleSink error im parameters, could lead to error
+- pytest, now 100%
+- monitaudit_init added, simple call
+- file life_cycle
+- path for filesink and jsonsink must be different
+- if an application has a corralation number it can be used in MTA
 
 ## 1.2.4 - 2026-11-01
 
@@ -26,7 +34,7 @@ MonitAudit follows Semantic Versioning:
 - Standardised example project structure.
 - Standardised example configuration loading.
 - Centralised example directory handling.
-- Updated runtime YAML configuration structure.
+- Updated runtime configuration structure.
 - Improved environment selection using `MONITAUDIT_ENV`.
 - Standardised sink output directories.
 - Updated JsonSink, FileSink and DeltaSink examples.
